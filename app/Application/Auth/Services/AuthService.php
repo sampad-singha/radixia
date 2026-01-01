@@ -4,6 +4,7 @@ namespace App\Application\Auth\Services;
 
 use App\Domain\Auth\Services\AuthServiceInterface;
 use App\Domain\Users\Repositories\UserRepositoryInterface;
+use App\Exceptions\Domain\Auth\Exceptions\InvalidCredentialsException;
 use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\Hash;
@@ -33,7 +34,7 @@ class AuthService implements AuthServiceInterface
         $user = $this->users->findByEmail($data['email']);
 
         if (! $user || ! Hash::check($data['password'], $user->password)) {
-            throw new Exception('The provided credentials are incorrect.', 401);
+            throw new InvalidCredentialsException();
         }
 
         $token = $user->createToken($data['device_name'])->plainTextToken; // Sanctum token issuance [page:4]
