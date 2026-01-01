@@ -2,9 +2,9 @@
 
 namespace App\Application\Auth\Services;
 
+use App\Domain\Auth\Exceptions\InvalidCredentialsException;
 use App\Domain\Auth\Services\AuthServiceInterface;
 use App\Domain\Users\Repositories\UserRepositoryInterface;
-use App\Exceptions\Domain\Auth\Exceptions\InvalidCredentialsException;
 use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\Hash;

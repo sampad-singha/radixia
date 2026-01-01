@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Exceptions\Domain\Auth\Exceptions;
+namespace App\Domain\Auth\Exceptions;
 
-use Exception;
 use RuntimeException;
 
 class InvalidCredentialsException extends RuntimeException
