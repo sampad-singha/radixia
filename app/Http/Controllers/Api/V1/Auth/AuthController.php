@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Domain\Auth\Services\AuthServiceInterface;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Requests\Api\V1\Auth\RegisterRequest;
+use App\Http\Requests\Api\V1\Auth\ResetPasswordRequest;
 use Illuminate\Http\Request;
 
 class AuthController extends Controller
@@ -33,6 +35,24 @@ class AuthController extends Controller
                 'token' => $result['token'],
                 'user' => $result['user'],
             ],
+        ]);
+    }
+
+    public function forgotPassword(ForgotPasswordRequest $request)
+    {
+        $status = $this->auth->forgotPassword($request->validated());
+
+        return response()->json([
+            'message' => $status,
+        ]);
+    }
+
+    public function resetPassword(ResetPasswordRequest $request)
+    {
+        $status = $this->auth->resetPassword($request->validated());
+
+        return response()->json([
+            'message' => $status,
         ]);
     }
 

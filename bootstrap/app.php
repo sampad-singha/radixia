@@ -1,6 +1,8 @@
 <?php
 
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
+use App\Domain\Auth\Exceptions\PasswordResetException;
+use App\Domain\Auth\Exceptions\PasswordResetLinkException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -22,4 +24,18 @@ return Application::configure(basePath: dirname(__DIR__))
                 'errors' => (object) [],
             ], 401);
         });
+        $exceptions->render(function (PasswordResetLinkException $e, Request $request) {
+            return response()->json([
+                'message' => 'Unable to send reset link.',
+                'error' => $e->getMessage()
+            ], 400);
+        });
+
+        $exceptions->render(function (PasswordResetException $e, Request $request) {
+            return response()->json([
+                'message' => 'Password reset failed.',
+                'error' => $e->getMessage()
+            ], 400);
+        });
+
     })->create();
