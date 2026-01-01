@@ -2,6 +2,8 @@
 
 namespace App\Application\Auth\Services;
 
+use App\Domain\Auth\Exceptions\EmailAlreadyVerifiedException;
+use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
 use App\Domain\Auth\Exceptions\PasswordResetLinkException;
@@ -9,6 +11,8 @@ use App\Domain\Auth\Services\AuthServiceInterface;
 use App\Domain\Users\Repositories\UserRepositoryInterface;
 use App\Models\User;
 use Exception;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Contracts\Auth\PasswordBroker;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -28,9 +32,45 @@ class AuthService implements AuthServiceInterface
     {
         $user = $this->createsNewUsers->create($data);
 
+        event(new Registered($user));
+
         $token = $user->createToken($data['device_name'])->plainTextToken;
 
         return ['user' => $user, 'token' => $token];
+    }
+
+    /**
+     * @throws EmailVerificationException
+     */
+    public function verifyEmail(int $id, string $hash): bool
+    {
+        $user = $this->users->findById($id); // Assuming findById exists or use findByEmail logic
+
+        if (! $user || ! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+            throw new EmailVerificationException('Invalid or expired verification link.');
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return true;
+        }
+
+        if ($user->markEmailAsVerified()) {
+            event(new Verified($user));
+        }
+
+        return true;
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function resendVerificationNotification(User $user): void
+    {
+        if ($user->hasVerifiedEmail()) {
+            throw new EmailAlreadyVerifiedException();
+        }
+
+        $user->sendEmailVerificationNotification();
     }
 
     /**

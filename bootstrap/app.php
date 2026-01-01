@@ -1,11 +1,14 @@
 <?php
 
+use App\Domain\Auth\Exceptions\EmailAlreadyVerifiedException;
+use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
 use App\Domain\Auth\Exceptions\PasswordResetLinkException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -36,6 +39,18 @@ return Application::configure(basePath: dirname(__DIR__))
                 'message' => 'Password reset failed.',
                 'error' => $e->getMessage()
             ], 400);
+        });
+
+        $exceptions->render(function (EmailVerificationException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
+        });
+
+        $exceptions->render(function (EmailAlreadyVerifiedException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400); // or 409 for conflict
         });
 
     })->create();

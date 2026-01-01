@@ -26,6 +26,20 @@ class AuthController extends Controller
         ], 201);
     }
 
+    public function verifyEmail(Request $request, $id, $hash)
+    {
+        $this->auth->verifyEmail($id, $hash);
+
+        return response()->json(['message' => 'Email verified successfully.']);
+    }
+
+    public function resendVerification(Request $request)
+    {
+        $this->auth->resendVerificationNotification($request->user());
+
+        return response()->json(['message' => 'Verification link sent.']);
+    }
+
     public function login(LoginRequest $request)
     {
         $result = $this->auth->login($request->validated());

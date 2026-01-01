@@ -18,4 +18,9 @@ class UserRepository implements UserRepositoryInterface
     {
         return User::query()->create($data);
     }
+
+    public function findById(int $id): ?User
+    {
+        return User::find($id);
+    }
 }
