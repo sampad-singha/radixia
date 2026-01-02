@@ -54,7 +54,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (EmailAlreadyVerifiedException $e, Request $request) {
             return response()->json([
                 'message' => $e->getMessage(),
-            ], 400); // or 409 for conflict
+            ], 409);
         });
 
         $exceptions->render(function (PasswordConfirmationException $e, Request $request) {

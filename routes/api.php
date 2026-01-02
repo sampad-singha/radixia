@@ -13,7 +13,7 @@ Route::prefix('v1/auth')->group(function () {
 
     // Email Verification (Public/Signed)
     Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
-        ->middleware(['throttle:6,1'])
+        ->middleware(['throttle:6,1', 'signed'])
         ->name('verification.verify');
 
     // Authenticated Auth Actions

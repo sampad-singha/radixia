@@ -11,13 +11,11 @@ use App\Domain\Auth\Exceptions\PasswordResetLinkException;
 use App\Domain\Auth\Services\AuthServiceInterface;
 use App\Domain\Users\Repositories\UserRepositoryInterface;
 use App\Models\User;
-use Exception;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Contracts\Auth\PasswordBroker;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 use Laravel\Fortify\Contracts\ResetsUserPasswords;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -47,10 +45,21 @@ class AuthService implements AuthServiceInterface
      */
     public function verifyEmail(int $id, string $hash): bool
     {
-        $user = $this->users->findById($id); // Assuming findById exists or use findByEmail logic
+        $user = $this->users->findById($id);
 
-        if (! $user || ! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
-            throw new EmailVerificationException('Invalid or expired verification link.');
+        $emailForVerification = $user
+            ? $user->getEmailForVerification()
+            : 'email_verification_dummy_value';
+
+        $expectedHash = sha1($emailForVerification);
+
+        $hashMatches = hash_equals(
+            $expectedHash,
+            (string) $hash
+        );
+
+        if (! $user || ! $hashMatches) {
+            throw new EmailVerificationException();
         }
 
         if ($user->hasVerifiedEmail()) {
@@ -65,7 +74,7 @@ class AuthService implements AuthServiceInterface
     }
 
     /**
-     * @throws Exception
+     * @throws EmailAlreadyVerifiedException
      */
     public function resendVerificationNotification(User $user): void
     {
@@ -77,7 +86,7 @@ class AuthService implements AuthServiceInterface
     }
 
     /**
-     * @throws Exception
+     * @throws InvalidCredentialsException
      */
     public function login(array $data): array
     {
@@ -130,6 +139,9 @@ class AuthService implements AuthServiceInterface
         return __($status);
     }
 
+    /**
+     * @throws PasswordConfirmationException
+     */
     public function confirmPassword(User $user, string $password): bool
     {
         if (! Hash::check($password, $user->password)) {
@@ -144,7 +156,7 @@ class AuthService implements AuthServiceInterface
         // But for API strict mode:
         if ($token instanceof PersonalAccessToken) {
             $token->forceFill([
-                'sudo_expires_at' => now()->addSeconds(config('auth.password_timeout', 10800)),
+                'sudo_expires_at' => now()->addSeconds(config('auth.password_timeout', 600)),
             ])->save();
         }
 
