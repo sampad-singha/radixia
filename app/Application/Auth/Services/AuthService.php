@@ -5,6 +5,7 @@ namespace App\Application\Auth\Services;
 use App\Domain\Auth\Exceptions\EmailAlreadyVerifiedException;
 use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
+use App\Domain\Auth\Exceptions\PasswordConfirmationException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
 use App\Domain\Auth\Exceptions\PasswordResetLinkException;
 use App\Domain\Auth\Services\AuthServiceInterface;
@@ -16,8 +17,10 @@ use Illuminate\Auth\Events\Verified;
 use Illuminate\Contracts\Auth\PasswordBroker;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 use Laravel\Fortify\Contracts\ResetsUserPasswords;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthService implements AuthServiceInterface
 {
@@ -125,5 +128,39 @@ class AuthService implements AuthServiceInterface
         }
 
         return __($status);
+    }
+
+    public function confirmPassword(User $user, string $password): bool
+    {
+        if (! Hash::check($password, $user->password)) {
+            throw new PasswordConfirmationException();
+        }
+
+        // Get the specific token used for this request
+        /** @var PersonalAccessToken $token */
+        $token = $user->currentAccessToken();
+
+        // If no token (e.g., testing or cookie session), you might handle differently
+        // But for API strict mode:
+        if ($token instanceof PersonalAccessToken) {
+            $token->forceFill([
+                'sudo_expires_at' => now()->addSeconds(config('auth.password_timeout', 10800)),
+            ])->save();
+        }
+
+        return true;
+    }
+
+    public function passwordConfirmedStatus(User $user): bool
+    {
+        /** @var PersonalAccessToken $token */
+        $token = $user->currentAccessToken();
+
+        if (! $token instanceof PersonalAccessToken) {
+            return false;
+        }
+
+        // Check if timestamp exists and is in the future
+        return $token->sudo_expires_at && $token->sudo_expires_at->isFuture();
     }
 }

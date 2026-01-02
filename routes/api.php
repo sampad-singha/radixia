@@ -24,6 +24,9 @@ Route::prefix('v1/auth')->group(function () {
         Route::post('/email/verification-notification', [AuthController::class, 'resendVerification'])
             ->middleware(['throttle:6,1'])
             ->name('verification.send');
+
+        Route::get('/confirmed-password-status', [AuthController::class, 'confirmedPasswordStatus']);
+        Route::post('/confirm-password', [AuthController::class, 'confirmPassword']);
     });
 });
 
@@ -37,7 +40,7 @@ Route::prefix('v1/user')->middleware('auth:sanctum')->group(function () {
     Route::put('/password', [AuthController::class, 'updatePassword']);
 
     // Verified Only Section
-    Route::middleware('verified')->group(function () {
+    Route::middleware('sudo')->group(function () {
         Route::get('test', function () {
             return response()->json(['message' => 'Email Verified, access granted.']);
         });

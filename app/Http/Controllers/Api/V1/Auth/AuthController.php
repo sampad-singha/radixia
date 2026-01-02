@@ -6,6 +6,7 @@ use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\UpdateUserProfileInformation;
 use App\Domain\Auth\Services\AuthServiceInterface;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Auth\ConfirmPasswordRequest;
 use App\Http\Requests\Api\V1\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Requests\Api\V1\Auth\RegisterRequest;
@@ -94,5 +95,21 @@ class AuthController extends Controller
     {
         $updater->update($request->user(), $request->all());
         return response()->json(['message' => 'Password updated successfully.']);
+    }
+
+    public function confirmPassword(ConfirmPasswordRequest $request)
+    {
+        $this->auth->confirmPassword($request->user(), $request->validated('password'));
+
+        return response()->json([
+            'message' => 'Password confirmed successfully. Sudo mode enabled.'
+        ]);
+    }
+
+    public function confirmedPasswordStatus(Request $request)
+    {
+        $status = $this->auth->passwordConfirmedStatus($request->user());
+
+        return response()->json(['confirmed' => $status]);
     }
 }
