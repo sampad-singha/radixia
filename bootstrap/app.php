@@ -8,6 +8,7 @@ use App\Domain\Auth\Exceptions\PasswordConfirmationException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
 use App\Domain\Auth\Exceptions\PasswordResetLinkException;
 use App\Domain\Auth\Exceptions\TwoFactorRequiredException;
+use App\Http\Middleware\EnsureEmailIsVerifiedApi;
 use App\Http\Middleware\EnsureSudoMode;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'sudo' => EnsureSudoMode::class,
+            'verified' => EnsureEmailIsVerifiedApi::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
