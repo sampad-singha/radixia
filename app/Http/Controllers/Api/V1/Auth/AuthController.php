@@ -48,6 +48,15 @@ class AuthController extends Controller
     {
         $result = $this->auth->login($request->validated());
 
+        // 2. CHECK FOR 2FA REQUIREMENT FIRST
+        if (isset($result['two_factor_required']) && $result['two_factor_required']) {
+            return response()->json([
+                'message' => $result['message'],
+                'two_factor_required' => true,
+            ], 423); // Return 423 Locked immediately
+        }
+
+        // 3. If no 2FA required (or 2FA passed), return Token
         return response()->json([
             'data' => [
                 'token' => $result['token'],

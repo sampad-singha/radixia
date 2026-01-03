@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
+use App\Http\Controllers\Api\V1\Auth\TwoFactorController;
 use Illuminate\Support\Facades\Route;
 
 // --- Auth Routes ---
@@ -28,6 +29,15 @@ Route::prefix('v1/auth')->group(function () {
         Route::get('/confirmed-password-status', [AuthController::class, 'confirmedPasswordStatus']);
         Route::post('/confirm-password', [AuthController::class, 'confirmPassword']);
     });
+
+    // Two-Factor Authentication Routes
+    Route::middleware(['auth:sanctum', 'sudo'])->prefix('two-factor')->group(function () {
+        Route::post('/enable', [TwoFactorController::class, 'enable']);
+        Route::post('/confirm', [TwoFactorController::class, 'confirm']);
+        Route::delete('/', [TwoFactorController::class, 'disable']);
+        Route::get('/recovery-codes', [TwoFactorController::class, 'recoveryCodes']);
+        Route::post('/recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes']);
+    });
 });
 
 // --- User Resource Routes ---
@@ -40,7 +50,7 @@ Route::prefix('v1/user')->middleware('auth:sanctum')->group(function () {
     Route::put('/password', [AuthController::class, 'updatePassword']);
 
     // Verified Only Section
-    Route::middleware('sudo')->group(function () {
+    Route::middleware(['verified', 'sudo'])->group(function () {
         Route::get('test', function () {
             return response()->json(['message' => 'Email Verified, access granted.']);
         });

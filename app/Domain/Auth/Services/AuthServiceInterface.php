@@ -23,4 +23,10 @@ interface AuthServiceInterface
      * Check if Sudo Mode is active for the current token.
      */
     public function passwordConfirmedStatus(User $user): bool;
+
+    public function enableTwoFactor(User $user): array;
+    public function regenerateRecoveryCodes(User $user): array;
+    public function confirmTwoFactor(User $user, string $code): void;
+    public function disableTwoFactor(User $user): void;
+    public function getRecoveryCodes(User $user): array;
 }

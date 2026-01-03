@@ -3,9 +3,11 @@
 use App\Domain\Auth\Exceptions\EmailAlreadyVerifiedException;
 use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
+use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
 use App\Domain\Auth\Exceptions\PasswordConfirmationException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
 use App\Domain\Auth\Exceptions\PasswordResetLinkException;
+use App\Domain\Auth\Exceptions\TwoFactorRequiredException;
 use App\Http\Middleware\EnsureSudoMode;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -62,6 +64,22 @@ return Application::configure(basePath: dirname(__DIR__))
                 'message' => $e->getMessage(),
                 'errors' => [
                     'password' => [$e->getMessage()]
+                ]
+            ], $e->getCode());
+        });
+
+        $exceptions->render(function (TwoFactorRequiredException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'two_factor_required' => true,
+            ], $e->getCode());
+        });
+
+        $exceptions->render(function (InvalidTwoFactorCodeException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'errors' => [
+                    'two_factor_code' => [$e->getMessage()]
                 ]
             ], $e->getCode());
         });
