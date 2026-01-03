@@ -3,6 +3,7 @@
 use App\Domain\Auth\Exceptions\EmailAlreadyVerifiedException;
 use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
+use App\Domain\Auth\Exceptions\InvalidResetClientException;
 use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
 use App\Domain\Auth\Exceptions\PasswordConfirmationException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
@@ -40,6 +41,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 'message' => 'Unable to send reset link.',
                 'error' => $e->getMessage()
             ], 400);
+        });
+
+        $exceptions->render(function (InvalidResetClientException $e, Request $request) {
+            return response()->json([
+                'message' => 'Invalid reset client.',
+                'error' => $e->getMessage()
+            ], 422);
         });
 
         $exceptions->render(function (PasswordResetException $e, Request $request) {

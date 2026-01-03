@@ -23,4 +23,17 @@ class UserRepository implements UserRepositoryInterface
     {
         return User::find($id);
     }
+
+    public function save(User $user): void
+    {
+        // Persist any changes already made to the User entity
+        $user->save();
+    }
+
+    public function markEmailVerified(User $user): void
+    {
+        if (! $user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+        }
+    }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
+use App\Http\Controllers\Api\V1\Auth\AuthSessionController;
 use App\Http\Controllers\Api\V1\Auth\TwoFactorController;
 use Illuminate\Support\Facades\Route;
 
@@ -37,6 +38,18 @@ Route::prefix('v1/auth')->group(function () {
         Route::delete('/', [TwoFactorController::class, 'disable']);
         Route::get('/recovery-codes', [TwoFactorController::class, 'recoveryCodes']);
         Route::post('/recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes']);
+    });
+
+    // Auth Session Management
+    Route::prefix('sessions')->middleware('auth:sanctum')->group(function () {
+        // List all sessions
+        Route::get('/', [AuthSessionController::class, 'index']);
+
+        // Revoke a specific session
+        Route::delete('/{tokenId}', [AuthSessionController::class, 'destroy']);
+
+        // Revoke all OTHER sessions (Requires Password Confirmation)
+        Route::delete('/', [AuthSessionController::class, 'destroyOthers'])->middleware('sudo');
     });
 });
 

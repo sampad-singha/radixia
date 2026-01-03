@@ -20,7 +20,11 @@ class AuthController extends Controller
 
     public function register(RegisterRequest $request): JsonResponse
     {
-        $result = $this->auth->register($request->validated());
+        $result = $this->auth->register(
+            $request->validated(),
+            $request->ip(),
+            $request->userAgent()
+        );
 
         return response()->json([
             'data' => [
@@ -46,7 +50,11 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): JsonResponse
     {
-        $result = $this->auth->login($request->validated());
+        $result = $this->auth->login(
+            $request->validated(),
+            $request->ip(),
+            $request->userAgent()
+        );
 
         // 2. CHECK FOR 2FA REQUIREMENT FIRST
         if (isset($result['two_factor_required']) && $result['two_factor_required']) {
@@ -67,7 +75,10 @@ class AuthController extends Controller
 
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
-        $status = $this->auth->forgotPassword($request->validated());
+        $status = $this->auth->forgotPassword(
+            $request->validated(),
+            $request->header('X-Client', 'web')
+        );
 
         return response()->json([
             'message' => $status,
