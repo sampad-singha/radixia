@@ -18,6 +18,8 @@ interface AccessTokenRepositoryInterface
 
     public function revokeOthers(User $user, int $currentTokenId): void;
 
+    public function revokeAll(User $user): void;
+
     public function setSudoExpiration(PersonalAccessToken $token, int $seconds): void;
 
     public function isSudoActive(User $user): bool;

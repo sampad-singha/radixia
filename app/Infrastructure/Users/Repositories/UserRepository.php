@@ -4,6 +4,8 @@ namespace App\Infrastructure\Users\Repositories;
 
 use App\Domain\Users\Repositories\UserRepositoryInterface;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class UserRepository implements UserRepositoryInterface
 {

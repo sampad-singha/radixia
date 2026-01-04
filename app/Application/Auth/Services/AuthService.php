@@ -10,6 +10,8 @@ use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
 use App\Domain\Auth\Exceptions\PasswordConfirmationException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
 use App\Domain\Auth\Exceptions\PasswordResetLinkException;
+use App\Domain\Auth\Exceptions\TwoFactorNotConfirmedException;
+use App\Domain\Auth\Exceptions\TwoFactorNotEnabledException;
 use App\Domain\Auth\Repositories\AccessTokenRepositoryInterface;
 use App\Domain\Auth\Repositories\TwoFactorRepositoryInterface;
 use App\Domain\Auth\Services\AuthServiceInterface;
@@ -26,7 +28,6 @@ use Laravel\Fortify\Contracts\CreatesNewUsers;
 use Laravel\Fortify\Contracts\ResetsUserPasswords;
 use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
 use Laravel\Fortify\RecoveryCode;
-use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthService implements AuthServiceInterface
 {
@@ -153,7 +154,7 @@ class AuthService implements AuthServiceInterface
         $status = $this->passwordBroker->sendResetLink(['email' => $data['email']]);
 
         if ($status !== Password::RESET_LINK_SENT) {
-            throw new PasswordResetLinkException(__($status));
+            throw new PasswordResetLinkException($status);
         }
 
         return __($status);
@@ -167,12 +168,17 @@ class AuthService implements AuthServiceInterface
         $status = $this->passwordBroker->reset(
             $data,
             function ($user, $password) {
-                $this->resetsUserPasswords->reset($user, ['password' => $password]);
+                $this->resetsUserPasswords->reset($user, [
+                    'password' => $password,
+                    'password_confirmation' => $password,
+                ]);
+
+                $this->tokens->revokeAll($user);
             }
         );
 
         if ($status !== Password::PASSWORD_RESET) {
-            throw new PasswordResetException(__($status));
+            throw new PasswordResetException($status);
         }
 
         return __($status);
@@ -207,7 +213,6 @@ class AuthService implements AuthServiceInterface
 
         $recoveryCodes = Collection::times(8, fn () => RecoveryCode::generate())->all();
 
-        // Persist via repository (repository encrypts)
         $this->twoFactor->enable($user, $secretKey, $recoveryCodes);
 
         $appName = config('app.name');
@@ -226,12 +231,25 @@ class AuthService implements AuthServiceInterface
         ];
     }
 
+    /**
+     * @throws TwoFactorNotConfirmedException
+     * @throws TwoFactorNotEnabledException
+     */
     public function regenerateRecoveryCodes(User $user): array
     {
+        if (! $user->hasEnabledTwoFactorAuthentication()) {
+            throw new TwoFactorNotEnabledException();
+        }
+
+        if (is_null($user->two_factor_confirmed_at)) {
+            throw new TwoFactorNotConfirmedException();
+        }
+
         $codes = Collection::times(8, fn () => RecoveryCode::generate())->all();
 
         return $this->twoFactor->regenerateRecoveryCodes($user, $codes);
     }
+
 
     /**
      * @throws InvalidTwoFactorCodeException
@@ -244,7 +262,6 @@ class AuthService implements AuthServiceInterface
             throw new InvalidTwoFactorCodeException();
         }
 
-        // persist confirmation via repo
         $this->twoFactor->confirm($user);
     }
 
@@ -273,9 +290,8 @@ class AuthService implements AuthServiceInterface
                 throw new InvalidTwoFactorCodeException();
             }
 
-            // remove used code and persist via repo
             unset($codes[$index]);
-            $codes = array_values($codes); // reindex
+            $codes = array_values($codes);
 
             $this->twoFactor->regenerateRecoveryCodes($user, $codes);
             return;

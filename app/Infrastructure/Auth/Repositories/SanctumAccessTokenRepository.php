@@ -4,6 +4,8 @@ namespace App\Infrastructure\Auth\Repositories;
 
 use App\Domain\Auth\Repositories\AccessTokenRepositoryInterface;
 use App\Models\User;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class SanctumAccessTokenRepository implements AccessTokenRepositoryInterface
@@ -47,6 +49,15 @@ class SanctumAccessTokenRepository implements AccessTokenRepositoryInterface
         $user->tokens()->where('id', '!=', $currentTokenId)->delete();
     }
 
+    public function revokeAll(User $user): void
+    {
+        $user->tokens()->delete();
+
+        $user->forceFill([
+            'remember_token' => Str::random(60),
+        ])->save();
+    }
+
     public function setSudoExpiration(PersonalAccessToken $token, int $seconds): void
     {
         $token->forceFill([
@@ -60,7 +71,7 @@ class SanctumAccessTokenRepository implements AccessTokenRepositoryInterface
 
         return $token
             && $token->sudo_expires_at
-            && $token->sudo_expires_at->isFuture();
+            && Carbon::parse($token->sudo_expires_at)->isFuture();
     }
 
 }
