@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Users\Services;
+namespace App\Domain\Auth\Services;
 
 use App\Models\User;
 

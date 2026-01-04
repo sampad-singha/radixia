@@ -4,6 +4,7 @@ namespace App\Infrastructure\Users\Repositories;
 
 use App\Domain\Users\Repositories\UserRepositoryInterface;
 use App\Models\User;
+use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -38,11 +39,12 @@ class UserRepository implements UserRepositoryInterface
         }
     }
 
-    public function setPendingEmail(User $user, string $email, string $token): void
+    public function setPendingEmail(User $user, string $email, string $token, DateTimeInterface $expiresAt): void
     {
         $user->forceFill([
             'pending_email' => $email,
             'pending_email_token' => $token,
+            'pending_email_expires_at' => $expiresAt,
         ])->save();
     }
 

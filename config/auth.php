@@ -118,4 +118,6 @@ return [
         'mobile' => env('RESET_CLIENT_MOBILE', 'myapp://reset-password'),
     ],
 
+    'email_change_timeout' => env('AUTH_EMAIL_CHANGE_TIMEOUT', 60),
+
 ];

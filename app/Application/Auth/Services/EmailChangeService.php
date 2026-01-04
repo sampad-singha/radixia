@@ -2,14 +2,13 @@
 
 namespace App\Application\Auth\Services;
 
+use App\Domain\Auth\Services\EmailChangeServiceInterface;
 use App\Domain\Users\Exceptions\InvalidEmailChangeTokenException;
 use App\Domain\Users\Repositories\UserRepositoryInterface;
-use App\Domain\Users\Services\EmailChangeServiceInterface;
 use App\Models\User;
 use App\Notifications\VerifyChangeEmail;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Str;
 use Random\RandomException;
 
 class EmailChangeService implements EmailChangeServiceInterface
@@ -27,7 +26,14 @@ class EmailChangeService implements EmailChangeServiceInterface
         $token = (string) random_int(100000, 999999);
 
         // 2. Persist to DB
-        $this->users->setPendingEmail($user, $newEmail, $token);
+        $timeoutMinutes = config('auth.email_change_timeout', 60);
+
+        $this->users->setPendingEmail(
+            $user,
+            $newEmail,
+            Hash::make($token),
+            now()->addMinutes($timeoutMinutes)
+        );
 
         // 3. Send notification to the NEW email
         Notification::route('mail', $newEmail)
@@ -39,11 +45,13 @@ class EmailChangeService implements EmailChangeServiceInterface
         $dummyHash = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
         $targetHash = $user->pending_email_token ?? $dummyHash;
         $isValidToken = Hash::check($code, $targetHash);
+        $isExpired = $user->pending_email_expires_at && $user->pending_email_expires_at->isPast();
         // 1. Validate Token
         if (
             ! $user->pending_email ||
             ! $user->pending_email_token ||
-            ! $isValidToken
+            ! $isValidToken ||
+            $isExpired
         ) {
             throw new InvalidEmailChangeTokenException();
         }

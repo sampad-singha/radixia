@@ -64,12 +64,18 @@ class AuthController extends Controller
             ], 423);
         }
 
-        return response()->json([
+        $response = [
             'data' => [
                 'token' => $result['token'],
                 'user' => $result['user'],
             ],
-        ]);
+        ];
+
+        if (isset($result['recovery_codes_remaining']) && $result['recovery_codes_remaining'] <= 3) {
+            $response['message'] = "Warning: You only have {$result['recovery_codes_remaining']} recovery codes left. Please regenerate them.";
+        }
+
+        return response()->json($response);
     }
 
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse

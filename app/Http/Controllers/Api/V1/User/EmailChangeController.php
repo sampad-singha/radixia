@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers\Api\V1\User;
 
-use App\Domain\Users\Services\EmailChangeServiceInterface;
+use App\Domain\Auth\Services\EmailChangeServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\User\RequestEmailChangeRequest;
 use App\Http\Requests\Api\V1\User\VerifyEmailChangeRequest;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class EmailChangeController extends Controller
 {

@@ -52,6 +52,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'pending_email_token' => 'hashed',
+            'pending_email_expires_at' => 'datetime',
         ];
     }
 }

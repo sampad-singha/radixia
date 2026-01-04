@@ -126,7 +126,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 'errors' => [
                     'password' => [$e->getMessage()]
                 ]
-            ], 403);
+            ], 422);
         });
 
         $exceptions->render(function (TwoFactorRequiredException $e, Request $request) {

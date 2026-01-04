@@ -10,7 +10,6 @@ use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
 use App\Domain\Auth\Exceptions\PasswordChangeException;
 use App\Domain\Auth\Exceptions\PasswordConfirmationException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
-use App\Domain\Auth\Exceptions\PasswordResetLinkException;
 use App\Domain\Auth\Exceptions\TwoFactorNotConfirmedException;
 use App\Domain\Auth\Exceptions\TwoFactorNotEnabledException;
 use App\Domain\Auth\Repositories\AccessTokenRepositoryInterface;
@@ -21,16 +20,16 @@ use App\Models\User;
 use App\Notifications\ResetPasswordNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Events\Verified;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Contracts\Auth\PasswordBroker;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 use Laravel\Fortify\Contracts\ResetsUserPasswords;
 use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
 use Laravel\Fortify\RecoveryCode;
+use Throwable;
 
 class AuthService implements AuthServiceInterface
 {
@@ -100,6 +99,7 @@ class AuthService implements AuthServiceInterface
 
     /**
      * @throws InvalidCredentialsException|InvalidTwoFactorCodeException
+     * @throws Throwable
      */
     public function login(array $data, ?string $ip, ?string $userAgent): array
     {
@@ -109,7 +109,8 @@ class AuthService implements AuthServiceInterface
             throw new InvalidCredentialsException();
         }
 
-        // 2FA requirement / verification
+        // 1. Read-Only Check: Is 2FA required?
+        // We do this OUTSIDE the transaction because it's just a check and might return early.
         if ($user->hasEnabledTwoFactorAuthentication()) {
             if (empty($data['two_factor_code']) && empty($data['recovery_code'])) {
                 return [
@@ -117,14 +118,28 @@ class AuthService implements AuthServiceInterface
                     'message' => 'Two-factor authentication required.',
                 ];
             }
-
-            $this->verifyTwoFactorCode($user, $data);
         }
 
-        // Use AccessTokenRepository to create token and persist metadata
-        $token = $this->tokens->create($user, $data['device_name'], $ip, $userAgent);
+        // 2. Transactional Write Operations
+        // We wrap both "Consume Code" and "Create Token" so they succeed or fail together.
+        return DB::transaction(function () use ($user, $data, $ip, $userAgent) {
+            $remainingCodes = null;
 
-        return ['user' => $user, 'token' => $token];
+            if ($user->hasEnabledTwoFactorAuthentication()) {
+                // This method validates AND deletes the recovery code from the DB.
+                // If the transaction rolls back, this deletion is undone.
+                $remainingCodes = $this->verifyTwoFactorCode($user, $data);
+            }
+
+            // Create token and persist metadata
+            $token = $this->tokens->create($user, $data['device_name'], $ip, $userAgent);
+
+            return [
+                'user' => $user,
+                'token' => $token,
+                'recovery_codes_remaining' => $remainingCodes
+            ];
+        });
     }
 
     public function logout(User $user): void
@@ -144,7 +159,7 @@ class AuthService implements AuthServiceInterface
         $resetUrlBase = config("auth.reset_clients.$client");
 
         if (! $resetUrlBase) {
-            throw new InvalidResetClientException("Invalid client: $client");
+            throw new InvalidResetClientException('Invalid password reset client.');
         }
 
         // 1. Get the user
@@ -286,7 +301,7 @@ class AuthService implements AuthServiceInterface
     /**
      * @throws InvalidTwoFactorCodeException
      */
-    private function verifyTwoFactorCode(User $user, array $data): void
+    private function verifyTwoFactorCode(User $user, array $data): ?int
     {
         if (! empty($data['recovery_code'])) {
             $codes = $this->twoFactor->getRecoveryCodes($user);
@@ -301,7 +316,7 @@ class AuthService implements AuthServiceInterface
             $codes = array_values($codes);
 
             $this->twoFactor->regenerateRecoveryCodes($user, $codes);
-            return;
+            return count($codes);
         }
 
         if (! empty($data['two_factor_code'])) {
@@ -311,6 +326,7 @@ class AuthService implements AuthServiceInterface
                 throw new InvalidTwoFactorCodeException();
             }
         }
+        return null;
     }
 
     public function listSessions(User $user): array
@@ -340,7 +356,7 @@ class AuthService implements AuthServiceInterface
      */
     public function changePassword(User $user, string $currentPassword, string $newPassword): void
     {
-        if (!Hash::check($currentPassword, $user->password)) {
+        if (! Hash::check($currentPassword, $user->password)) {
             throw new PasswordConfirmationException();
         }
 

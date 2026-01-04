@@ -14,7 +14,7 @@ class VerifyChangeEmail extends Notification implements ShouldQueue
     /**
      * Create a new notification instance.
      */
-    public function __construct(public string $token)
+    public function __construct(public string $token, public int $timeoutMinutes)
     {
         //
     }
@@ -39,6 +39,7 @@ class VerifyChangeEmail extends Notification implements ShouldQueue
             ->line('A request was made to change the email address on your account.')
             ->line('To confirm this change, please use the verification code below:')
             ->line('**' . $this->token . '**')
+            ->line("This code will expire in {$this->timeoutMinutes} minutes.")
             ->line('If you did NOT request this change, someone may have access to your account.')
             ->line('We recommend that you:')
             ->line('• Do not share this code with anyone')

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('pending_email')->nullable();
             $table->string('pending_email_token')->nullable();
+            $table->timestamp('pending_email_expires_at')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
