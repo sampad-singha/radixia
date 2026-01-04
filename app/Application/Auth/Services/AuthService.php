@@ -159,7 +159,7 @@ class AuthService implements AuthServiceInterface
         $token = Password::broker()->createToken($user);
 
         // 3. Build the specific URL for this request
-        $url = $resetUrlBase . '?token=' . $token . '&email=' . urlencode($user->email);
+        $url = $resetUrlBase . '?token=' . urlencode($token) . '&email=' . urlencode($user->email);
 
         // 4. Send Notification explicitly
         $user->notify(new ResetPasswordNotification($url));

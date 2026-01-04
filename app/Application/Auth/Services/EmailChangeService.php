@@ -36,11 +36,14 @@ class EmailChangeService implements EmailChangeServiceInterface
 
     public function verifyChange(User $user, string $code): void
     {
+        $dummyHash = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
+        $targetHash = $user->pending_email_token ?? $dummyHash;
+        $isValidToken = Hash::check($code, $targetHash);
         // 1. Validate Token
         if (
             ! $user->pending_email ||
             ! $user->pending_email_token ||
-            ! Hash::check($code, $user->pending_email_token)
+            ! $isValidToken
         ) {
             throw new InvalidEmailChangeTokenException();
         }
