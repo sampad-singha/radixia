@@ -43,7 +43,6 @@ class SanctumAccessTokenRepository implements AccessTokenRepositoryInterface
         $user->tokens()->where('id', $tokenId)->delete();
     }
 
-
     public function revokeOthers(User $user, int $currentTokenId): void
     {
         $user->tokens()->where('id', '!=', $currentTokenId)->delete();

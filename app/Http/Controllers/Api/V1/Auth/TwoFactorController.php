@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Domain\Auth\Services\AuthServiceInterface;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Auth\ConfirmTwoFactorRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -34,10 +35,8 @@ class TwoFactorController extends Controller
         ]);
     }
 
-    public function confirm(Request $request): JsonResponse
+    public function confirm(ConfirmTwoFactorRequest $request): JsonResponse
     {
-        $request->validate(['code' => 'required|string']);
-
         $this->auth->confirmTwoFactor($request->user(), $request->code);
 
         return response()->json([

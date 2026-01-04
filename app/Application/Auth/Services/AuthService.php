@@ -17,6 +17,7 @@ use App\Domain\Auth\Repositories\TwoFactorRepositoryInterface;
 use App\Domain\Auth\Services\AuthServiceInterface;
 use App\Domain\Users\Repositories\UserRepositoryInterface;
 use App\Models\User;
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -134,30 +135,34 @@ class AuthService implements AuthServiceInterface
     }
 
     /**
-     * @throws PasswordResetLinkException
      * @throws InvalidResetClientException
      */
     public function forgotPassword(array $data, string $client): string
     {
-        $resetUrl = config("auth.reset_clients.$client");
+        $resetUrlBase = config("auth.reset_clients.$client");
 
-        if (! $resetUrl) {
-            throw new InvalidResetClientException();
+        if (! $resetUrlBase) {
+            throw new InvalidResetClientException("Invalid client: $client");
         }
 
-        ResetPassword::createUrlUsing(function ($user, string $token) use ($resetUrl) {
-            return $resetUrl
-                . '?token=' . $token
-                . '&email=' . urlencode($user->email);
-        });
+        // 1. Get the user
+        $user = $this->users->findByEmail($data['email']);
 
-        $status = $this->passwordBroker->sendResetLink(['email' => $data['email']]);
-
-        if ($status !== Password::RESET_LINK_SENT) {
-            throw new PasswordResetLinkException($status);
+        if (! $user) {
+            // Return success to prevent email enumeration, or throw based on your policy
+            return Password::RESET_LINK_SENT;
         }
 
-        return __($status);
+        // 2. Generate Token Manually
+        $token = Password::broker()->createToken($user);
+
+        // 3. Build the specific URL for this request
+        $url = $resetUrlBase . '?token=' . $token . '&email=' . urlencode($user->email);
+
+        // 4. Send Notification explicitly
+        $user->notify(new ResetPasswordNotification($url));
+
+        return Password::RESET_LINK_SENT;
     }
 
     /**

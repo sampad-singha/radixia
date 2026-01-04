@@ -43,7 +43,6 @@ return Application::configure(basePath: dirname(__DIR__))
             ], 422);
         });
 
-
         $exceptions->render(function (InvalidCredentialsException $e, $request) {
             return response()->json([
                 'message' => $e->getMessage(),
@@ -55,7 +54,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (PasswordResetLinkException $e) {
 
             return match ($e->brokerStatus()) {
-
                 Password::RESET_THROTTLED => response()->json([
                     'message' => 'Too many reset requests. Please try again later.',
                     'code' => 'PASSWORD_RESET_LINK_THROTTLED',

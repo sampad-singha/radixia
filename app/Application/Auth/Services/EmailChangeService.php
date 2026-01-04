@@ -10,6 +10,7 @@ use App\Notifications\VerifyChangeEmail;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
+use Random\RandomException;
 
 class EmailChangeService implements EmailChangeServiceInterface
 {
@@ -17,10 +18,13 @@ class EmailChangeService implements EmailChangeServiceInterface
         private readonly UserRepositoryInterface $users
     ) {}
 
+    /**
+     * @throws RandomException
+     */
     public function requestChange(User $user, string $newEmail): void
     {
         // 1. Generate a random 6-digit code or secure token
-        $token = strtoupper(Str::random(6));
+        $token = (string) random_int(100000, 999999);
 
         // 2. Persist to DB
         $this->users->setPendingEmail($user, $newEmail, $token);

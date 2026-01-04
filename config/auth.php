@@ -113,10 +113,9 @@ return [
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
     'reset_clients' => [
-        'web' => 'http://localhost:3000/reset-password',
-        'admin' => 'http://localhost:3001/reset-password',
-        'mobile' => 'myapp://reset-password',
+        'web' => env('RESET_CLIENT_WEB', 'http://localhost:3000/reset-password'),
+        'admin' => env('RESET_CLIENT_ADMIN', 'http://localhost:3001/reset-password'),
+        'mobile' => env('RESET_CLIENT_MOBILE', 'myapp://reset-password'),
     ],
-
 
 ];

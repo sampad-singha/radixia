@@ -56,15 +56,13 @@ class AuthController extends Controller
             $request->userAgent()
         );
 
-        // 2. CHECK FOR 2FA REQUIREMENT FIRST
         if (isset($result['two_factor_required']) && $result['two_factor_required']) {
             return response()->json([
                 'message' => $result['message'],
                 'two_factor_required' => true,
-            ], 423); // Return 423 Locked immediately
+            ], 423);
         }
 
-        // 3. If no 2FA required (or 2FA passed), return Token
         return response()->json([
             'data' => [
                 'token' => $result['token'],
@@ -81,7 +79,7 @@ class AuthController extends Controller
         );
 
         return response()->json([
-            'message' => $status,
+            'message' => __($status),
         ]);
     }
 
@@ -90,7 +88,7 @@ class AuthController extends Controller
         $status = $this->auth->resetPassword($request->validated());
 
         return response()->json([
-            'message' => $status,
+            'message' => __($status),
         ]);
     }
 

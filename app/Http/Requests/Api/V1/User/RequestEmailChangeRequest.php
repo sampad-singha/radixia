@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api\V1\User;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class RequestEmailChangeRequest extends FormRequest
 {
@@ -28,8 +29,16 @@ class RequestEmailChangeRequest extends FormRequest
                 'string',
                 'email',
                 'max:255',
-                'unique:users,email',
+                Rule::unique('users', 'email'),
+                Rule::unique('users', 'pending_email'),
             ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'email.unique' => 'This email address cannot be used.', // Deliberately generic message to prevent info leakage
         ];
     }
 }

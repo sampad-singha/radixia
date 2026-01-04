@@ -20,4 +20,3 @@ class PasswordResetLinkException extends Exception
         return $this->brokerStatus;
     }
 }
-
