@@ -8,6 +8,6 @@ class EmailAlreadyVerifiedException extends Exception
 {
     public function __construct()
     {
-        parent::__construct('Email is already verified.', 400);
+        parent::__construct('Email is already verified.');
     }
 }

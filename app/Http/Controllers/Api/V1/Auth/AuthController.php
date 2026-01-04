@@ -6,6 +6,7 @@ use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\UpdateUserProfileInformation;
 use App\Domain\Auth\Services\AuthServiceInterface;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Auth\ChangePasswordRequest;
 use App\Http\Requests\Api\V1\Auth\ConfirmPasswordRequest;
 use App\Http\Requests\Api\V1\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
@@ -20,7 +21,11 @@ class AuthController extends Controller
 
     public function register(RegisterRequest $request): JsonResponse
     {
-        $result = $this->auth->register($request->validated());
+        $result = $this->auth->register(
+            $request->validated(),
+            $request->ip(),
+            $request->userAgent()
+        );
 
         return response()->json([
             'data' => [
@@ -46,7 +51,18 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): JsonResponse
     {
-        $result = $this->auth->login($request->validated());
+        $result = $this->auth->login(
+            $request->validated(),
+            $request->ip(),
+            $request->userAgent()
+        );
+
+        if (isset($result['two_factor_required']) && $result['two_factor_required']) {
+            return response()->json([
+                'message' => $result['message'],
+                'two_factor_required' => true,
+            ], 423);
+        }
 
         return response()->json([
             'data' => [
@@ -58,10 +74,13 @@ class AuthController extends Controller
 
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
-        $status = $this->auth->forgotPassword($request->validated());
+        $status = $this->auth->forgotPassword(
+            $request->validated(),
+            $request->header('X-Client', 'web')
+        );
 
         return response()->json([
-            'message' => $status,
+            'message' => __($status),
         ]);
     }
 
@@ -70,7 +89,7 @@ class AuthController extends Controller
         $status = $this->auth->resetPassword($request->validated());
 
         return response()->json([
-            'message' => $status,
+            'message' => __($status),
         ]);
     }
 
@@ -112,5 +131,18 @@ class AuthController extends Controller
         $status = $this->auth->passwordConfirmedStatus($request->user());
 
         return response()->json(['confirmed' => $status]);
+    }
+
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
+    {
+        $this->auth->changePassword(
+            $request->user(),
+            $request->validated('current_password'),
+            $request->validated('password')
+        );
+
+        return response()->json([
+            'message' => 'Password changed successfully. All sessions have been logged out.',
+        ]);
     }
 }
