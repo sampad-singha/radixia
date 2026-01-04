@@ -62,4 +62,12 @@ class UserRepository implements UserRepositoryInterface
         ])->save();
     }
 
+    public function updatePassword(User $user, string $newPassword): void
+    {
+        $user->forceFill([
+            'password' => $newPassword,
+            'remember_token' => Str::random(60),
+        ])->save();
+    }
+
 }

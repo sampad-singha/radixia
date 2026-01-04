@@ -23,4 +23,5 @@ interface AuthServiceInterface
     public function listSessions(User $user): array;
     public function revokeSession(User $user, string $tokenId): void;
     public function revokeOtherSessions(User $user): void;
+    public function changePassword(User $user, string $currentPassword, string $newPassword): void;
 }

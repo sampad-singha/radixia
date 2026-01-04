@@ -7,6 +7,7 @@ use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
 use App\Domain\Auth\Exceptions\InvalidResetClientException;
 use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
+use App\Domain\Auth\Exceptions\PasswordChangeException;
 use App\Domain\Auth\Exceptions\PasswordConfirmationException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
 use App\Domain\Auth\Exceptions\PasswordResetLinkException;
@@ -25,6 +26,7 @@ use Illuminate\Contracts\Auth\PasswordBroker;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 use Laravel\Fortify\Contracts\ResetsUserPasswords;
 use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
@@ -330,5 +332,23 @@ class AuthService implements AuthServiceInterface
         }
 
         $this->tokens->revokeOthers($user, (int) $current->id);
+    }
+
+    /**
+     * @throws PasswordConfirmationException
+     * @throws PasswordChangeException
+     */
+    public function changePassword(User $user, string $currentPassword, string $newPassword): void
+    {
+        if (!Hash::check($currentPassword, $user->password)) {
+            throw new PasswordConfirmationException();
+        }
+
+        if (Hash::check($newPassword, $user->password)) {
+            throw new PasswordChangeException("New password cannot be the same as your current password.");
+        }
+
+        $this->users->updatePassword($user, $newPassword);
+        $user->tokens()->delete();
     }
 }

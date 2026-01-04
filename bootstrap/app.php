@@ -5,6 +5,7 @@ use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
 use App\Domain\Auth\Exceptions\InvalidResetClientException;
 use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
+use App\Domain\Auth\Exceptions\PasswordChangeException;
 use App\Domain\Auth\Exceptions\PasswordConfirmationException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
 use App\Domain\Auth\Exceptions\PasswordResetLinkException;
@@ -175,5 +176,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 ]
             ], 422);
         });
+
+        $exceptions->render(function (PasswordChangeException $e, Request $request) {
+            return response()->json([
+                'message' => 'Password change failed.',
+                'code' => 'PASSWORD_CHANGE_FAILED',
+                'error' => $e->getMessage(),
+            ], 400);
+        });
+
 
     })->create();

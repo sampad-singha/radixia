@@ -16,5 +16,6 @@ interface UserRepositoryInterface
     public function setPendingEmail(User $user, string $email, string $token): void;
     public function setEmail(User $user, string $email): void;
     public function clearPendingEmail(User $user): void;
+    public function updatePassword(User $user, string $newPassword): void;
 
 }

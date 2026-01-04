@@ -30,6 +30,8 @@ Route::prefix('v1/auth')->group(function () {
 
         Route::get('/confirmed-password-status', [AuthController::class, 'confirmedPasswordStatus']);
         Route::post('/confirm-password', [AuthController::class, 'confirmPassword']);
+
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
     });
 
     // Two-Factor Authentication Routes
@@ -57,13 +59,8 @@ Route::prefix('v1/auth')->group(function () {
 // --- User Resource Routes ---
 Route::prefix('v1/user')->middleware('auth:sanctum')->group(function () {
     // Profile Management
-    // URL: PUT /api/v1/user/profile-information
     Route::put('/profile-information', [AuthController::class, 'updateProfile']);
-
-    // URL: PUT /api/v1/user/password
     Route::put('/password', [AuthController::class, 'updatePassword']);
-
-    // Verified Only Section
     Route::middleware(['verified', 'sudo'])->group(function () {
         Route::get('test', function () {
             return response()->json(['message' => 'Email Verified, access granted.']);

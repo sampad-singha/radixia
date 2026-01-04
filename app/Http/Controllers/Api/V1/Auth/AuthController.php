@@ -6,6 +6,7 @@ use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\UpdateUserProfileInformation;
 use App\Domain\Auth\Services\AuthServiceInterface;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Auth\ChangePasswordRequest;
 use App\Http\Requests\Api\V1\Auth\ConfirmPasswordRequest;
 use App\Http\Requests\Api\V1\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
@@ -130,5 +131,18 @@ class AuthController extends Controller
         $status = $this->auth->passwordConfirmedStatus($request->user());
 
         return response()->json(['confirmed' => $status]);
+    }
+
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
+    {
+        $this->auth->changePassword(
+            $request->user(),
+            $request->validated('current_password'),
+            $request->validated('password')
+        );
+
+        return response()->json([
+            'message' => 'Password changed successfully. All sessions have been logged out.',
+        ]);
     }
 }
