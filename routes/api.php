@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\AuthSessionController;
 use App\Http\Controllers\Api\V1\Auth\TwoFactorController;
+use App\Http\Controllers\Api\V1\User\EmailChangeController;
 use Illuminate\Support\Facades\Route;
 
 // --- Auth Routes ---
@@ -67,5 +68,14 @@ Route::prefix('v1/user')->middleware('auth:sanctum')->group(function () {
         Route::get('test', function () {
             return response()->json(['message' => 'Email Verified, access granted.']);
         });
+    });
+
+    Route::prefix('email')->group(function () {
+        Route::post('/', [EmailChangeController::class, 'store'])
+            ->middleware('sudo')
+            ->name('user.email.request');
+
+        Route::post('/verify', [EmailChangeController::class, 'verify'])
+            ->name('user.email.verify');
     });
 });

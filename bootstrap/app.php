@@ -11,6 +11,7 @@ use App\Domain\Auth\Exceptions\PasswordResetLinkException;
 use App\Domain\Auth\Exceptions\TwoFactorNotConfirmedException;
 use App\Domain\Auth\Exceptions\TwoFactorNotEnabledException;
 use App\Domain\Auth\Exceptions\TwoFactorRequiredException;
+use App\Domain\Users\Exceptions\InvalidEmailChangeTokenException;
 use App\Http\Middleware\EnsureEmailIsVerifiedApi;
 use App\Http\Middleware\EnsureSudoMode;
 use Illuminate\Foundation\Application;
@@ -165,6 +166,16 @@ return Application::configure(basePath: dirname(__DIR__))
                     'two_factor_status' => [$e->getMessage()]
                 ]
             ], 409);
+        });
+
+        $exceptions->render(function (InvalidEmailChangeTokenException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => 'INVALID_EMAIL_VERIFICATION_TOKEN',
+                'errors' => [
+                    'verification_code' => [$e->getMessage()]
+                ]
+            ], 422);
         });
 
     })->create();

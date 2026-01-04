@@ -24,6 +24,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
+        'pending_email',
+        'pending_email_token',
     ];
 
     /**
@@ -36,6 +38,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'remember_token',
         'two_factor_recovery_codes',
         'two_factor_secret',
+        'pending_email',
+        'pending_email_token',
     ];
 
     /**
@@ -49,6 +53,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'pending_email_token' => 'hashed',
         ];
     }
 }
