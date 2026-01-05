@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api\V1\Auth;
 
-use App\Actions\Fortify\UpdateUserPassword;
 use App\Actions\Fortify\UpdateUserProfileInformation;
 use App\Domain\Auth\Services\AuthServiceInterface;
 use App\Http\Controllers\Controller;
@@ -115,12 +114,6 @@ class AuthController extends Controller
     {
         $updater->update($request->user(), $request->all());
         return response()->json(['message' => 'Profile updated successfully.']);
-    }
-
-    public function updatePassword(Request $request, UpdateUserPassword $updater): JsonResponse
-    {
-        $updater->update($request->user(), $request->all());
-        return response()->json(['message' => 'Password updated successfully.']);
     }
 
     public function confirmPassword(ConfirmPasswordRequest $request): JsonResponse
