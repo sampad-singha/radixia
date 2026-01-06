@@ -5,10 +5,12 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\SocialAccount;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -54,5 +56,10 @@ class User extends Authenticatable implements MustVerifyEmail
             'pending_email_token' => 'hashed',
             'pending_email_expires_at' => 'datetime',
         ];
+    }
+
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
     }
 }

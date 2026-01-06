@@ -4,11 +4,13 @@ use App\Domain\Auth\Exceptions\EmailAlreadyVerifiedException;
 use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
 use App\Domain\Auth\Exceptions\InvalidResetClientException;
+use App\Domain\Auth\Exceptions\SocialProviderException;
 use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
 use App\Domain\Auth\Exceptions\PasswordChangeException;
 use App\Domain\Auth\Exceptions\PasswordConfirmationException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
 use App\Domain\Auth\Exceptions\PasswordResetLinkException;
+use App\Domain\Auth\Exceptions\SocialEmailRequiredException;
 use App\Domain\Auth\Exceptions\TwoFactorNotConfirmedException;
 use App\Domain\Auth\Exceptions\TwoFactorNotEnabledException;
 use App\Domain\Auth\Exceptions\TwoFactorRequiredException;
@@ -185,5 +187,19 @@ return Application::configure(basePath: dirname(__DIR__))
             ], 400);
         });
 
+        $exceptions->render(function (SocialProviderException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code'    => $e->errorCode,
+            ], $e->getCode());
+        });
+
+        $exceptions->render(function (SocialEmailRequiredException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => 'EMAIL_REQUIRED',
+                'data' => $e->providerUser,
+            ], 422);
+        });
 
     })->create();
