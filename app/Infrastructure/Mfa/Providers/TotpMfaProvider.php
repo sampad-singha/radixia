@@ -47,7 +47,6 @@ class TotpMfaProvider implements MfaProviderInterface
 
         // 2. Standard TOTP Verification
         // If it wasn't a backup code, try the Time-Based code.
-//        return $this->provider->verify(decrypt($method->secret), $code);
         return $this->provider->verify($method->secret, $code);
     }
 

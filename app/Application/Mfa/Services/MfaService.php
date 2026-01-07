@@ -55,13 +55,17 @@ class MfaService implements MfaServiceInterface
         ]);
     }
 
-    public function disable(User $user, string $type): void
+    public function disable(User $user, ?string $type = null): void
     {
-        // Delete the method record
-        $user->mfaMethods()->where('type', $type)->delete();
+        $query = $user->mfaMethods();
 
-        // Optional: If no methods left, ensure no MFA flag is set on User?
-        // (Not needed if you check mfaMethods()->exists() in AuthService)
+        if ($type) {
+            // Disable specific method
+            $query->where('type', $type);
+        }
+
+        // If $type is null, this deletes ALL rows (Global Disable)
+        $query->delete();
     }
 
     public function regenerateRecoveryCodes(User $user): array

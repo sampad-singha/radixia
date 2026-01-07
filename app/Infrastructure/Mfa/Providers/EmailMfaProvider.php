@@ -16,6 +16,9 @@ class EmailMfaProvider implements MfaProviderInterface
         return 'email';
     }
 
+    /**
+     * @throws RandomException
+     */
     public function generateSetupData(User $user): array
     {
         // Setup for email is just triggering the first challenge

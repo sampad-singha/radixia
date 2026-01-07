@@ -42,13 +42,16 @@ class TwoFactorController extends Controller
 
     public function disable(Request $request): JsonResponse
     {
-        $request->validate(['type' => 'required|string|in:totp,email']);
+        // Validate that 'type' is a string OR null
+        $type = $request->query('type');
 
-        $this->mfaService->disable($request->user(), $request->type);
+        $this->mfaService->disable($request->user(), $type);
 
-        return response()->json([
-            'message' => 'Two-factor authentication disabled.'
-        ]);
+        $message = $type
+            ? "{$type} authentication disabled."
+            : "Two-factor authentication disabled for all methods.";
+
+        return response()->json(['message' => $message]);
     }
 
     public function regenerateRecoveryCodes(Request $request): JsonResponse
