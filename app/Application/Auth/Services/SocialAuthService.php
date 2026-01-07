@@ -2,6 +2,7 @@
 
 namespace App\Application\Auth\Services;
 
+use App\Application\Mfa\Services\MfaService;
 use App\Domain\Auth\Exceptions\SocialProviderException;
 use App\Domain\Auth\Exceptions\SocialEmailRequiredException;
 use App\Domain\Auth\Repositories\AccessTokenRepositoryInterface;
@@ -23,6 +24,7 @@ class SocialAuthService implements SocialAuthServiceInterface
         private readonly UserRepositoryInterface $users,
         private readonly SocialAccountRepositoryInterface $socialAccounts,
         private readonly AccessTokenRepositoryInterface $tokens,
+        private readonly MfaService $mfaService,
     ) {}
 
 
@@ -127,13 +129,18 @@ class SocialAuthService implements SocialAuthServiceInterface
 
     private function issueToken(User $user): array
     {
-        $token = $this->tokens->create(
-            $user,
-            'social-login',
-            request()->ip(),
-            request()->userAgent()
-        );
+        // 1. Check MFA
+        $mfaResult = $this->mfaService->checkMfaRequirement($user, request()->all());
 
+        if ($mfaResult) {
+            // Create Temp Token for Social Flow
+            $tempToken = $this->tokens->create($user, 'social-mfa-pending', request()->ip(), request()->userAgent());
+            $mfaResult['token'] = $tempToken;
+            return $mfaResult;
+        }
+
+        // 2. Standard Login
+        $token = $this->tokens->create($user, 'social-login', request()->ip(), request()->userAgent());
         return ['status' => 'SUCCESS', 'token' => $token, 'user' => $user];
     }
 }

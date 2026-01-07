@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1\Auth;
 
+use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
+use App\Domain\Auth\Repositories\AccessTokenRepositoryInterface;
 use App\Domain\Mfa\Services\MfaServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\ConfirmTwoFactorRequest;
@@ -11,7 +13,8 @@ use Illuminate\Http\Request;
 class TwoFactorController extends Controller
 {
     public function __construct(
-        private readonly MfaServiceInterface $mfaService
+        private readonly MfaServiceInterface $mfaService,
+        private readonly AccessTokenRepositoryInterface $tokens, // Need this to issue
     ) {}
 
     public function enable(Request $request): JsonResponse
@@ -71,6 +74,46 @@ class TwoFactorController extends Controller
 
         return response()->json([
             'data' => ['recovery_codes' => $codes]
+        ]);
+    }
+
+    /**
+     * @throws InvalidTwoFactorCodeException
+     */
+    public function verifyLogin(Request $request): JsonResponse
+    {
+        $request->validate([
+            'code' => 'required|string',
+            'type' => 'required|string|in:totp,email',
+            'device_name' => 'required|string' // Needed for new token
+        ]);
+
+        // 1. Verify Code using the new service method
+        $this->mfaService->verifyMfaChallenge(
+            $request->user(),
+            $request->code,
+            $request->type
+        );
+
+        // 2. Issue Real Token
+        $token = $this->tokens->create(
+            $request->user(),
+            $request->device_name,
+            $request->ip(),
+            $request->userAgent()
+        );
+
+        // 3. Revoke Temp Token (if applicable)
+        if ($request->user()->currentAccessToken()->name === 'social-mfa-pending') {
+            $request->user()->currentAccessToken()->delete();
+        }
+
+        return response()->json([
+            'message' => 'Login successful.',
+            'data' => [
+                'token' => $token, // Plain text token from repo
+                'user' => $request->user()
+            ]
         ]);
     }
 }

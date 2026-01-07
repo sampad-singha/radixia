@@ -98,4 +98,61 @@ class MfaService implements MfaServiceInterface
 
         return [];
     }
+
+    public function checkMfaRequirement(User $user, array $data): ?array
+    {
+        $user->load('mfaMethods');
+        $enabledMethods = $user->mfaMethods->pluck('type')->toArray();
+
+        if (empty($enabledMethods)) {
+            return null; // Proceed
+        }
+
+        $requestedType = $data['mfa_type']
+            ?? $user->mfaMethods()->where('is_default', true)->value('type')
+            ?? $enabledMethods[0];
+
+        // A. VERIFY PHASE (Code Provided)
+        if (! empty($data['mfa_code'])) {
+            $this->resolveMfaChallenge($user, $data['mfa_code'], $requestedType);
+            return null; // Success!
+        }
+
+        // B. CHALLENGE PHASE (No Code)
+        $provider = $this->mfaFactory->make($requestedType);
+        $challengeSent = false;
+
+        // Auto-trigger challenge for Email
+        if ($requestedType === 'email' || (isset($data['mfa_type']) && $data['mfa_type'] === $requestedType)) {
+            $challengeSent = $provider->prepareChallenge($user);
+        }
+
+        return [
+            'mfa_required' => true,
+            'available_methods' => $enabledMethods,
+            'challenge_sent' => $challengeSent,
+            'message' => $challengeSent
+                ? "Challenge sent via {$requestedType}."
+                : "Two-factor authentication required."
+        ];
+    }
+
+    public function verifyMfaChallenge(User $user, string $code, string $type): void
+    {
+        // Ensure method is actually enabled
+        $method = $user->mfaMethods()->where('type', $type)->first();
+
+        if (! $method) {
+            throw new InvalidTwoFactorCodeException("Method not enabled.");
+        }
+
+        $provider = $this->mfaFactory->make($type);
+
+        if (! $provider->verify($user, $code)) {
+            throw new InvalidTwoFactorCodeException();
+        }
+
+        // Update usage timestamp
+        $method->update(['last_used_at' => now()]);
+    }
 }

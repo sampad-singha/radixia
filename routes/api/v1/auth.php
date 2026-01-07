@@ -22,6 +22,7 @@ Route::prefix('auth')->group(function () {
         Route::prefix('social')->group(function () {
             Route::post('{provider}/callback', [SocialAuthController::class, 'callback']);
         });
+        Route::middleware('auth:sanctum')->post('/auth/mfa/verify-login', [TwoFactorController::class, 'verifyLogin']);
     });
 
     // Email Verification (Signed URL)

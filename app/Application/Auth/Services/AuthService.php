@@ -3,6 +3,7 @@
 namespace App\Application\Auth\Services;
 
 use App\Application\Mfa\MfaFactory;
+use App\Application\Mfa\Services\MfaService;
 use App\Domain\Auth\Exceptions\EmailAlreadyVerifiedException;
 use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
@@ -33,7 +34,7 @@ class AuthService implements AuthServiceInterface
         private readonly CreatesNewUsers $createsNewUsers,
         private readonly ResetsUserPasswords $resetsUserPasswords,
         private readonly PasswordBroker $passwordBroker,
-        private readonly MfaFactory $mfaFactory,
+        private readonly MfaService $mfaService,
     ) {}
 
     public function register(array $data, ?string $ip, ?string $userAgent): array
@@ -91,65 +92,86 @@ class AuthService implements AuthServiceInterface
     }
 
     /**
-     * @throws InvalidCredentialsException|InvalidTwoFactorCodeException
+     * @throws InvalidCredentialsException
      * @throws Throwable
      */
+//    public function login(array $data, ?string $ip, ?string $userAgent): array
+//    {
+//        // 1. Credentials Check
+//        $user = $this->users->findByEmail($data['email']);
+//
+//        if (! $user || ! Hash::check($data['password'], $user->password)) {
+//            throw new InvalidCredentialsException();
+//        }
+//
+//        // 2. Check Enabled MFA Methods
+//        $enabledMethods = $user->mfaMethods->pluck('type')->toArray();
+//
+//        if (! empty($enabledMethods)) {
+//
+//            $requestedType = $data['mfa_type']
+//                ?? $user->mfaMethods()->where('is_default', true)->value('type')
+//                ?? $enabledMethods[0];
+//
+//            $provider = $this->mfaFactory->make($requestedType);
+//
+//            // A. VERIFY PHASE (Code Provided)
+//            if (! empty($data['mfa_code'])) {
+//
+//                if (! in_array($requestedType, $enabledMethods)) {
+//                    throw new InvalidTwoFactorCodeException("Method not enabled.");
+//                }
+//
+//                if ($provider->verify($user, $data['mfa_code'])) {
+//                    // Update usage timestamp
+//                    $user->mfaMethods()->where('type', $requestedType)->update(['last_used_at' => now()]);
+//                    goto issue_token;
+//                }
+//
+//                throw new InvalidTwoFactorCodeException();
+//            }
+//
+//            // B. CHALLENGE PHASE (No Code)
+//            $challengeSent = false;
+//
+//            // Explicitly request challenge if type matches
+//            if (isset($data['mfa_type']) && $data['mfa_type'] === $requestedType) {
+//                $challengeSent = $provider->prepareChallenge($user);
+//            }
+//
+//            return [
+//                'mfa_required' => true,
+//                'available_methods' => $enabledMethods,
+//                'challenge_sent' => $challengeSent,
+//                'message' => $challengeSent
+//                    ? "Challenge sent via {$requestedType}."
+//                    : "Two-factor authentication required."
+//            ];
+//        }
+//
+//        issue_token:
+//        $token = $this->tokens->create($user, $data['device_name'], $ip, $userAgent);
+//        return ['user' => $user, 'token' => $token];
+//    }
     public function login(array $data, ?string $ip, ?string $userAgent): array
     {
         // 1. Credentials Check
         $user = $this->users->findByEmail($data['email']);
-
         if (! $user || ! Hash::check($data['password'], $user->password)) {
             throw new InvalidCredentialsException();
         }
 
-        // 2. Check Enabled MFA Methods
-        $enabledMethods = $user->mfaMethods->pluck('type')->toArray();
+        // 2. Check MFA
+        $mfaResult = $this->mfaService->checkMfaRequirement($user, $data);
 
-        if (! empty($enabledMethods)) {
-
-            $requestedType = $data['mfa_type']
-                ?? $user->mfaMethods()->where('is_default', true)->value('type')
-                ?? $enabledMethods[0];
-
-            $provider = $this->mfaFactory->make($requestedType);
-
-            // A. VERIFY PHASE (Code Provided)
-            if (! empty($data['mfa_code'])) {
-
-                if (! in_array($requestedType, $enabledMethods)) {
-                    throw new InvalidTwoFactorCodeException("Method not enabled.");
-                }
-
-                if ($provider->verify($user, $data['mfa_code'])) {
-                    // Update usage timestamp
-                    $user->mfaMethods()->where('type', $requestedType)->update(['last_used_at' => now()]);
-                    goto issue_token;
-                }
-
-                throw new InvalidTwoFactorCodeException();
-            }
-
-            // B. CHALLENGE PHASE (No Code)
-            $challengeSent = false;
-
-            // Explicitly request challenge if type matches
-            if (isset($data['mfa_type']) && $data['mfa_type'] === $requestedType) {
-                $challengeSent = $provider->prepareChallenge($user);
-            }
-
-            return [
-                'mfa_required' => true,
-                'available_methods' => $enabledMethods,
-                'challenge_sent' => $challengeSent,
-                'message' => $challengeSent
-                    ? "Challenge sent via {$requestedType}."
-                    : "Two-factor authentication required."
-            ];
+        if ($mfaResult) {
+            return $mfaResult;
         }
 
-        issue_token:
+        // 3. Issue Token
         $token = $this->tokens->create($user, $data['device_name'], $ip, $userAgent);
+        $user->unsetRelation('mfaMethods');
+
         return ['user' => $user, 'token' => $token];
     }
 
@@ -238,37 +260,6 @@ class AuthService implements AuthServiceInterface
     public function passwordConfirmedStatus(User $user): bool
     {
         return $this->tokens->isSudoActive($user);
-    }
-
-    /**
-     * @throws InvalidTwoFactorCodeException
-     */
-    private function verifyTwoFactorCode(User $user, array $data): ?int
-    {
-        if (! empty($data['recovery_code'])) {
-            $codes = $this->twoFactor->getRecoveryCodes($user);
-
-            $index = array_search($data['recovery_code'], $codes, true);
-
-            if ($index === false) {
-                throw new InvalidTwoFactorCodeException();
-            }
-
-            unset($codes[$index]);
-            $codes = array_values($codes);
-
-            $this->twoFactor->regenerateRecoveryCodes($user, $codes);
-            return count($codes);
-        }
-
-        if (! empty($data['two_factor_code'])) {
-            $secret = $this->twoFactor->getSecret($user);
-
-            if (! $secret || ! $this->twoFactorProvider->verify($secret, $data['two_factor_code'])) {
-                throw new InvalidTwoFactorCodeException();
-            }
-        }
-        return null;
     }
 
     public function listSessions(User $user): array
