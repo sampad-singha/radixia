@@ -100,20 +100,11 @@ readonly class MfaService implements MfaServiceInterface
             ?? $user->mfaMethods()->where('is_default', true)->value('type')
             ?? $enabledMethods[0];
 
-        // A. VERIFY PHASE (Code Provided)
-        if (! empty($data['mfa_code'])) {
-            $this->verifyMfaChallenge($user, $data['mfa_code'], $requestedType);
-            return null; // Success!
-        }
-
         // B. CHALLENGE PHASE (No Code)
         $provider = $this->mfaFactory->make($requestedType);
         $challengeSent = false;
 
-        // Auto-trigger challenge for Email
-        if ($requestedType === 'email' || (isset($data['mfa_type']) && $data['mfa_type'] === $requestedType)) {
-            $challengeSent = $provider->prepareChallenge($user);
-        }
+        $challengeSent = $provider->prepareChallenge($user);
 
         return [
             'mfa_required' => true,

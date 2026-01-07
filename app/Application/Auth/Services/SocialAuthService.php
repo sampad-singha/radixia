@@ -25,7 +25,9 @@ readonly class SocialAuthService implements SocialAuthServiceInterface
         private SocialAccountRepositoryInterface $socialAccounts,
         private AccessTokenRepositoryInterface   $tokens,
         private MfaService                       $mfaService,
-    ) {}
+    )
+    {
+    }
 
 
     /**
@@ -34,8 +36,8 @@ readonly class SocialAuthService implements SocialAuthServiceInterface
      */
     public function handleProviderCallback(string $provider, string $code, string $frontendRedirectUrl, ?string $manualEmail = null): array
     {
-         /*The code is not directly used here because Socialite handles the exchange internally.
-         But we kept it to make it clear which parameter is expected.*/
+        /*The code is not directly used here because Socialite handles the exchange internally.
+        But we kept it to make it clear which parameter is expected.*/
         try {
             /** @var SocialiteUser $providerUser */
             $providerUser = Socialite::driver($provider)
@@ -92,7 +94,7 @@ readonly class SocialAuthService implements SocialAuthServiceInterface
         // 2. Validate Email
         $email = $providerUser->getEmail() ?? $manualEmail;
 
-        if (! $email) {
+        if (!$email) {
             throw new SocialEmailRequiredException([
                 'id' => $providerUser->getId(),
                 'name' => $providerUser->getName(),
@@ -103,7 +105,7 @@ readonly class SocialAuthService implements SocialAuthServiceInterface
         // 3. Register or Link
         $user = $this->users->findByEmail($email);
 
-        if (! $user) {
+        if (!$user) {
             $userData = [
                 'name' => $providerUser->getName() ?? 'User',
                 'email' => $email,
@@ -134,7 +136,12 @@ readonly class SocialAuthService implements SocialAuthServiceInterface
 
         if ($mfaResult) {
             // Create Temp Token for Social Flow
-            $tempToken = $this->tokens->create($user, 'social-mfa-pending', request()->ip(), request()->userAgent());
+            $tempToken = $this->tokens->create(
+                $user,
+                'social-mfa-pending',
+                request()->ip(),
+                request()->userAgent(),
+                ['mfa:verify']);  // Ability to identify this as a temp token
             $mfaResult['token'] = $tempToken;
             return $mfaResult;
         }
