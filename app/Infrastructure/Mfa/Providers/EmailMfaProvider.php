@@ -56,7 +56,6 @@ class EmailMfaProvider implements MfaProviderInterface
 
     public function verify(User $user, string $code): bool
     {
-        \Log::info('Verifying code: ' . $code);
         $method = $user->mfaMethods()->where('type', 'email')->first();
 
         // Check if data exists

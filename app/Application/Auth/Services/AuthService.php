@@ -93,64 +93,6 @@ readonly class AuthService implements AuthServiceInterface
      * @throws InvalidCredentialsException
      * @throws Throwable
      */
-//    public function login(array $data, ?string $ip, ?string $userAgent): array
-//    {
-//        // 1. Credentials Check
-//        $user = $this->users->findByEmail($data['email']);
-//
-//        if (! $user || ! Hash::check($data['password'], $user->password)) {
-//            throw new InvalidCredentialsException();
-//        }
-//
-//        // 2. Check Enabled MFA Methods
-//        $enabledMethods = $user->mfaMethods->pluck('type')->toArray();
-//
-//        if (! empty($enabledMethods)) {
-//
-//            $requestedType = $data['mfa_type']
-//                ?? $user->mfaMethods()->where('is_default', true)->value('type')
-//                ?? $enabledMethods[0];
-//
-//            $provider = $this->mfaFactory->make($requestedType);
-//
-//            // A. VERIFY PHASE (Code Provided)
-//            if (! empty($data['mfa_code'])) {
-//
-//                if (! in_array($requestedType, $enabledMethods)) {
-//                    throw new InvalidTwoFactorCodeException("Method not enabled.");
-//                }
-//
-//                if ($provider->verify($user, $data['mfa_code'])) {
-//                    // Update usage timestamp
-//                    $user->mfaMethods()->where('type', $requestedType)->update(['last_used_at' => now()]);
-//                    goto issue_token;
-//                }
-//
-//                throw new InvalidTwoFactorCodeException();
-//            }
-//
-//            // B. CHALLENGE PHASE (No Code)
-//            $challengeSent = false;
-//
-//            // Explicitly request challenge if type matches
-//            if (isset($data['mfa_type']) && $data['mfa_type'] === $requestedType) {
-//                $challengeSent = $provider->prepareChallenge($user);
-//            }
-//
-//            return [
-//                'mfa_required' => true,
-//                'available_methods' => $enabledMethods,
-//                'challenge_sent' => $challengeSent,
-//                'message' => $challengeSent
-//                    ? "Challenge sent via {$requestedType}."
-//                    : "Two-factor authentication required."
-//            ];
-//        }
-//
-//        issue_token:
-//        $token = $this->tokens->create($user, $data['device_name'], $ip, $userAgent);
-//        return ['user' => $user, 'token' => $token];
-//    }
     public function login(array $data, ?string $ip, ?string $userAgent): array
     {
         // 1. Credentials Check
@@ -163,6 +105,17 @@ readonly class AuthService implements AuthServiceInterface
         $mfaResult = $this->mfaService->checkMfaRequirement($user, $data);
 
         if ($mfaResult) {
+            // --- MISSING PART: Create Temp Token ---
+            $tempToken = $this->tokens->create(
+                $user,
+                'login-mfa-pending', // Name matters!
+                $ip,
+                $userAgent,
+                ['mfa:verify']  // Ability to identify this as a temp token
+            );
+
+            // Add token to result so Controller can send it
+            $mfaResult['token'] = $tempToken;
             return $mfaResult;
         }
 

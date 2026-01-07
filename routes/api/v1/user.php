@@ -5,7 +5,7 @@ use App\Http\Controllers\Api\V1\User\EmailChangeController;
 use Illuminate\Support\Facades\Route;
 
 // All routes here are scoped to 'v1/user' and require 'auth:sanctum'
-Route::prefix('user')->middleware('auth:sanctum')->group(function () {
+Route::prefix('user')->middleware(['auth:sanctum', 'ability:access-api'])->group(function () {
 
     // ---------------------------------------------------------------------
     // Profile Management

@@ -63,6 +63,7 @@ class AuthController extends Controller
                 'mfa_required' => true,
                 'available_methods' => $result['available_methods'] ?? [],
                 'challenge_sent' => $result['challenge_sent'] ?? false, // Frontend needs this to know if it should expect a code immediately
+                'token' => $result['token'],
             ], 423); // 423 Locked
         }
 

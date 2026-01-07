@@ -11,10 +11,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Random\RandomException;
 
-class EmailChangeService implements EmailChangeServiceInterface
+readonly class EmailChangeService implements EmailChangeServiceInterface
 {
     public function __construct(
-        private readonly UserRepositoryInterface $users
+        private UserRepositoryInterface $users
     ) {}
 
     /**
@@ -37,7 +37,7 @@ class EmailChangeService implements EmailChangeServiceInterface
 
         // 3. Send notification to the NEW email
         Notification::route('mail', $newEmail)
-            ->notify(new VerifyChangeEmail($token));
+            ->notify(new VerifyChangeEmail($token, $timeoutMinutes));
     }
 
     public function verifyChange(User $user, string $code): void

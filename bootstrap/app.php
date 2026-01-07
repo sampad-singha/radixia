@@ -23,6 +23,10 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Password;
+use Laravel\Sanctum\Exceptions\MissingAbilityException;
+use Laravel\Sanctum\Http\Middleware\CheckAbilities;
+use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -35,9 +39,19 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'sudo' => EnsureSudoMode::class,
             'verified' => EnsureEmailIsVerifiedApi::class,
+            'ability' => CheckForAnyAbility::class,
+            'abilities' => CheckAbilities::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Handle Missing Ability (403 Forbidden)
+        $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
+            return response()->json([
+                'message' => 'Access denied. The token does not have the required ability.',
+                'code' => 'ACCESS_DENIED',
+            ], 403);
+        });
+
         $exceptions->render(function (ValidationException $e, Request $request) {
             return response()->json([
                 'message' => 'Validation failed.',

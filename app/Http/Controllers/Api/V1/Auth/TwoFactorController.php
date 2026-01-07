@@ -104,7 +104,7 @@ class TwoFactorController extends Controller
         );
 
         // 3. Revoke Temp Token (if applicable)
-        if ($request->user()->currentAccessToken()->name === 'social-mfa-pending') {
+        if ($request->user()->currentAccessToken()->name === 'login-mfa-pending') {
             $request->user()->currentAccessToken()->delete();
         }
 

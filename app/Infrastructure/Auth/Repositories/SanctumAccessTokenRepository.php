@@ -10,9 +10,15 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class SanctumAccessTokenRepository implements AccessTokenRepositoryInterface
 {
-    public function create(User $user, string $deviceName, ?string $ip, ?string $userAgent): string
+    public function create(
+        User $user,
+        string $deviceName,
+        ?string $ip,
+        ?string $userAgent,
+        ?array $abilities = ['*']
+    ): string
     {
-        $tokenResult = $user->createToken($deviceName);
+        $tokenResult = $user->createToken($deviceName, $abilities);
 
         $tokenResult->accessToken->forceFill([
             'ip_address' => $ip,

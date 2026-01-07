@@ -9,18 +9,15 @@ use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
-class MfaService implements MfaServiceInterface
+readonly class MfaService implements MfaServiceInterface
 {
     public function __construct(
-        private readonly MfaFactory $mfaFactory
+        private MfaFactory $mfaFactory
     ) {}
 
     public function enable(User $user, string $type): array
     {
         $provider = $this->mfaFactory->make($type);
-
-        // 1. Prepare Challenge (e.g. Send Email if type='email')
-        $provider->prepareChallenge($user);
 
         // 2. Generate Setup Data (e.g. QR Code for TOTP)
         return $provider->generateSetupData($user);
@@ -33,22 +30,10 @@ class MfaService implements MfaServiceInterface
     {
         $provider = $this->mfaFactory->make($type);
 
-        // Use the provider's logic to verify the code against the "pending" or passed secret.
-        // For TOTP, we usually need the secret that was just generated.
-        // Note: In stateless REST APIs, passing the secret back from the client is common
-        // during confirmation, OR saving it to DB as 'pending' in enable().
-        //
-        // Assuming enable() saved it to DB as 'is_default=false' / 'pending'.
-        // So we verify against the user's stored record.
-
-        // We temporarily pass an empty string if the provider fetches secret from DB internally.
         if (! $provider->verify($user, $code)) {
             throw new InvalidTwoFactorCodeException();
         }
 
-        // If successful, mark as confirmed/default
-        // Note: You might need a specific method on Provider or direct DB update here.
-        // We'll update directly for simplicity since we know the table structure.
         $user->mfaMethods()->where('type', $type)->update([
             'is_default' => true,
             // 'confirmed_at' => now(), // If you have this column
@@ -99,6 +84,9 @@ class MfaService implements MfaServiceInterface
         return [];
     }
 
+    /**
+     * @throws InvalidTwoFactorCodeException
+     */
     public function checkMfaRequirement(User $user, array $data): ?array
     {
         $user->load('mfaMethods');
@@ -114,7 +102,7 @@ class MfaService implements MfaServiceInterface
 
         // A. VERIFY PHASE (Code Provided)
         if (! empty($data['mfa_code'])) {
-            $this->resolveMfaChallenge($user, $data['mfa_code'], $requestedType);
+            $this->verifyMfaChallenge($user, $data['mfa_code'], $requestedType);
             return null; // Success!
         }
 

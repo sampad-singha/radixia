@@ -22,7 +22,6 @@ Route::prefix('auth')->group(function () {
         Route::prefix('social')->group(function () {
             Route::post('{provider}/callback', [SocialAuthController::class, 'callback']);
         });
-        Route::middleware('auth:sanctum')->post('/auth/mfa/verify-login', [TwoFactorController::class, 'verifyLogin']);
     });
 
     // Email Verification (Signed URL)
@@ -33,7 +32,7 @@ Route::prefix('auth')->group(function () {
     // ---------------------------------------------------------------------
     // Authenticated Routes (Sanctum)
     // ---------------------------------------------------------------------
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'ability:access-api'])->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::get('me', [AuthController::class, 'me']);
 
@@ -54,11 +53,16 @@ Route::prefix('auth')->group(function () {
             ->middleware('verified');
     });
 
+    // Multi-Factor Authentication during Login
+    Route::middleware(['auth:sanctum', 'ability:mfa:verify'])->group(function () {
+        Route::post('/verify-login', [TwoFactorController::class, 'verifyLogin']);
+    });
+
     // ---------------------------------------------------------------------
     // Two-Factor Authentication (Sudo Protected + Verified)
     // ---------------------------------------------------------------------
     // Requires: Logged in + Verified Email + Sudo Mode (Recent Password Confirm)
-    Route::middleware(['auth:sanctum', 'verified', 'sudo'])
+    Route::middleware(['auth:sanctum', 'verified', 'sudo', 'ability:access-api'])
         ->prefix('two-factor')
         ->group(function () {
 
@@ -76,7 +80,7 @@ Route::prefix('auth')->group(function () {
     // ---------------------------------------------------------------------
     // Session Management
     // ---------------------------------------------------------------------
-    Route::prefix('sessions')->middleware('auth:sanctum')->group(function () {
+    Route::prefix('sessions')->middleware(['auth:sanctum', 'ability:access-api'])->group(function () {
         Route::get('/', [AuthSessionController::class, 'index']);
         Route::delete('/{tokenId}', [AuthSessionController::class, 'destroy']);
 

@@ -9,11 +9,11 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticationProvider;
 
-class TotpMfaProvider implements MfaProviderInterface
+readonly class TotpMfaProvider implements MfaProviderInterface
 {
 
     public function __construct(
-        private readonly TwoFactorAuthenticationProvider $provider
+        private TwoFactorAuthenticationProvider $provider
     ) {}
 
     public function verify(User $user, string $code): bool
