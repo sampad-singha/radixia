@@ -18,13 +18,13 @@ use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 use Log;
 
-class SocialAuthService implements SocialAuthServiceInterface
+readonly class SocialAuthService implements SocialAuthServiceInterface
 {
     public function __construct(
-        private readonly UserRepositoryInterface $users,
-        private readonly SocialAccountRepositoryInterface $socialAccounts,
-        private readonly AccessTokenRepositoryInterface $tokens,
-        private readonly MfaService $mfaService,
+        private UserRepositoryInterface          $users,
+        private SocialAccountRepositoryInterface $socialAccounts,
+        private AccessTokenRepositoryInterface   $tokens,
+        private MfaService                       $mfaService,
     ) {}
 
 

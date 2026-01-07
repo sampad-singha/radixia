@@ -2,13 +2,11 @@
 
 namespace App\Application\Auth\Services;
 
-use App\Application\Mfa\MfaFactory;
 use App\Application\Mfa\Services\MfaService;
 use App\Domain\Auth\Exceptions\EmailAlreadyVerifiedException;
 use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
 use App\Domain\Auth\Exceptions\InvalidResetClientException;
-use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
 use App\Domain\Auth\Exceptions\PasswordChangeException;
 use App\Domain\Auth\Exceptions\PasswordConfirmationException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
@@ -26,15 +24,15 @@ use Laravel\Fortify\Contracts\CreatesNewUsers;
 use Laravel\Fortify\Contracts\ResetsUserPasswords;
 use Throwable;
 
-class AuthService implements AuthServiceInterface
+readonly class AuthService implements AuthServiceInterface
 {
     public function __construct(
-        private readonly UserRepositoryInterface $users,
-        private readonly AccessTokenRepositoryInterface $tokens,
-        private readonly CreatesNewUsers $createsNewUsers,
-        private readonly ResetsUserPasswords $resetsUserPasswords,
-        private readonly PasswordBroker $passwordBroker,
-        private readonly MfaService $mfaService,
+        private UserRepositoryInterface        $users,
+        private AccessTokenRepositoryInterface $tokens,
+        private CreatesNewUsers                $createsNewUsers,
+        private ResetsUserPasswords            $resetsUserPasswords,
+        private PasswordBroker                 $passwordBroker,
+        private MfaService                     $mfaService,
     ) {}
 
     public function register(array $data, ?string $ip, ?string $userAgent): array

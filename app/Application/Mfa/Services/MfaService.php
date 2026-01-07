@@ -137,6 +137,9 @@ class MfaService implements MfaServiceInterface
         ];
     }
 
+    /**
+     * @throws InvalidTwoFactorCodeException
+     */
     public function verifyMfaChallenge(User $user, string $code, string $type): void
     {
         // Ensure method is actually enabled
