@@ -24,6 +24,7 @@ class ConfirmTwoFactorRequest extends FormRequest
     {
         return [
             'code' => ['required', 'string'],
+            'type' => ['required', 'string', 'in:totp,email'],
         ];
     }
 }

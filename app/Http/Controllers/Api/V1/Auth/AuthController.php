@@ -56,13 +56,17 @@ class AuthController extends Controller
             $request->userAgent()
         );
 
-        if (isset($result['two_factor_required']) && $result['two_factor_required']) {
+        // --- NEW: MFA Handling ---
+        if (isset($result['mfa_required']) && $result['mfa_required']) {
             return response()->json([
                 'message' => $result['message'],
-                'two_factor_required' => true,
-            ], 423);
+                'mfa_required' => true,
+                'available_methods' => $result['available_methods'] ?? [],
+                'challenge_sent' => $result['challenge_sent'] ?? false, // Frontend needs this to know if it should expect a code immediately
+            ], 423); // 423 Locked
         }
 
+        // --- Standard Login Success ---
         $response = [
             'data' => [
                 'token' => $result['token'],
@@ -70,6 +74,9 @@ class AuthController extends Controller
             ],
         ];
 
+        // Warn if recovery codes are running low (Only relevant if they just used one)
+        // Note: You might want to remove this if you aren't strictly tracking "remaining" count in the main login response anymore,
+        // but if your AuthService still returns it, keep it.
         if (isset($result['recovery_codes_remaining']) && $result['recovery_codes_remaining'] <= 3) {
             $response['message'] = "Warning: You only have {$result['recovery_codes_remaining']} recovery codes left. Please regenerate them.";
         }

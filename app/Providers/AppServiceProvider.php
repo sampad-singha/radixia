@@ -5,12 +5,14 @@ namespace App\Providers;
 use App\Application\Auth\Services\AuthService;
 use App\Application\Auth\Services\EmailChangeService;
 use App\Application\Auth\Services\SocialAuthService;
+use App\Application\Mfa\Services\MfaService;
 use App\Domain\Auth\Repositories\AccessTokenRepositoryInterface;
 use App\Domain\Auth\Repositories\SocialAccountRepositoryInterface;
 use App\Domain\Auth\Repositories\TwoFactorRepositoryInterface;
 use App\Domain\Auth\Services\AuthServiceInterface;
 use App\Domain\Auth\Services\EmailChangeServiceInterface;
 use App\Domain\Auth\Services\SocialAuthServiceInterface;
+use App\Domain\Mfa\Services\MfaServiceInterface;
 use App\Domain\Users\Repositories\UserRepositoryInterface;
 use App\Infrastructure\Auth\Repositories\SanctumAccessTokenRepository;
 use App\Infrastructure\Auth\Repositories\SocialAccountRepository;
@@ -32,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(EmailChangeServiceInterface::class, EmailChangeService::class);
         $this->app->bind(SocialAccountRepositoryInterface::class, SocialAccountRepository::class);
         $this->app->bind(SocialAuthServiceInterface::class, SocialAuthService::class);
+        $this->app->bind(MfaServiceInterface::class, MfaService::class);
     }
 
     /**

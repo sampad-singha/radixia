@@ -11,6 +11,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\SocialAccount;
+use App\Models\MfaMethod;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -62,4 +63,10 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(SocialAccount::class);
     }
+
+    public function mfaMethods(): HasMany
+    {
+        return $this->hasMany(MfaMethod::class);
+    }
+
 }

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Auth;
 
-use App\Domain\Auth\Services\AuthServiceInterface;
+use App\Domain\Mfa\Services\MfaServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\ConfirmTwoFactorRequest;
 use Illuminate\Http\JsonResponse;
@@ -11,33 +11,29 @@ use Illuminate\Http\Request;
 class TwoFactorController extends Controller
 {
     public function __construct(
-        private readonly AuthServiceInterface $auth
+        private readonly MfaServiceInterface $mfaService
     ) {}
 
     public function enable(Request $request): JsonResponse
     {
-        $data = $this->auth->enableTwoFactor($request->user());
+        $request->validate(['type' => 'required|string|in:totp,email']);
+
+        $data = $this->mfaService->enable($request->user(), $request->type);
 
         return response()->json([
-            'message' => 'Two-factor authentication enabled. Please scan the QR code and confirm.',
+            'message' => 'Setup initiated. Please confirm to activate.',
+            'type' => $request->type,
             'data' => $data
-        ]);
-    }
-
-    public function regenerateRecoveryCodes(Request $request): JsonResponse
-    {
-        // Protected by 'sudo' middleware
-        $codes = $this->auth->regenerateRecoveryCodes($request->user());
-
-        return response()->json([
-            'message' => 'Recovery codes regenerated.',
-            'data' => ['recovery_codes' => $codes]
         ]);
     }
 
     public function confirm(ConfirmTwoFactorRequest $request): JsonResponse
     {
-        $this->auth->confirmTwoFactor($request->user(), $request->code);
+        $this->mfaService->confirm(
+            $request->user(),
+            $request->validated('type'),
+            $request->validated('code')
+        );
 
         return response()->json([
             'message' => 'Two-factor authentication confirmed and activated.'
@@ -46,16 +42,29 @@ class TwoFactorController extends Controller
 
     public function disable(Request $request): JsonResponse
     {
-        $this->auth->disableTwoFactor($request->user());
+        $request->validate(['type' => 'required|string|in:totp,email']);
+
+        $this->mfaService->disable($request->user(), $request->type);
 
         return response()->json([
             'message' => 'Two-factor authentication disabled.'
         ]);
     }
 
+    public function regenerateRecoveryCodes(Request $request): JsonResponse
+    {
+        // Usually TOTP specific, but service handles logic
+        $codes = $this->mfaService->regenerateRecoveryCodes($request->user());
+
+        return response()->json([
+            'message' => 'Recovery codes regenerated.',
+            'data' => ['recovery_codes' => $codes]
+        ]);
+    }
+
     public function recoveryCodes(Request $request): JsonResponse
     {
-        $codes = $this->auth->getRecoveryCodes($request->user());
+        $codes = $this->mfaService->getRecoveryCodes($request->user());
 
         return response()->json([
             'data' => ['recovery_codes' => $codes]
