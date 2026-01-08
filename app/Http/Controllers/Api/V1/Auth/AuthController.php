@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Actions\Fortify\UpdateUserProfileInformation;
+use App\Domain\Auth\Exceptions\PasswordAlreadySetException;
 use App\Domain\Auth\Services\AuthServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\ChangePasswordRequest;
 use App\Http\Requests\Api\V1\Auth\ConfirmPasswordRequest;
+use App\Http\Requests\Api\V1\Auth\ConfirmSudoRequest;
 use App\Http\Requests\Api\V1\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Requests\Api\V1\Auth\RegisterRequest;
 use App\Http\Requests\Api\V1\Auth\ResetPasswordRequest;
+use App\Http\Requests\Api\V1\Auth\SetPasswordRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -124,20 +127,24 @@ class AuthController extends Controller
         return response()->json(['message' => 'Profile updated successfully.']);
     }
 
-    public function confirmPassword(ConfirmPasswordRequest $request): JsonResponse
+    public function confirmSudo(ConfirmSudoRequest $request): JsonResponse
     {
-        $this->auth->confirmPassword($request->user(), $request->validated('password'));
+        $type = $request->validated('type');
+        $value = $type === 'password' ? $request->validated('password') : $request->validated('code');
+
+        $this->auth->confirmSudoMode($request->user(), $type, $value);
 
         return response()->json([
-            'message' => 'Password confirmed successfully. Sudo mode enabled.'
+            'message' => 'Sudo mode enabled.'
         ]);
     }
 
-    public function confirmedPasswordStatus(Request $request): JsonResponse
+    public function getSudoUser(Request $request): JsonResponse
     {
-        $status = $this->auth->passwordConfirmedStatus($request->user());
+        // Use the new service method
+        $status = $this->auth->getSudoStatus($request->user());
 
-        return response()->json(['confirmed' => $status]);
+        return response()->json($status);
     }
 
     public function changePassword(ChangePasswordRequest $request): JsonResponse
@@ -151,5 +158,15 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Password changed successfully. All sessions have been logged out.',
         ]);
+    }
+
+    /**
+     * @throws PasswordAlreadySetException
+     */
+    public function setPassword(SetPasswordRequest $request): JsonResponse
+    {
+        $this->auth->setPassword($request->user(), $request->validated('password'));
+
+        return response()->json(['message' => 'Password set successfully.']);
     }
 }

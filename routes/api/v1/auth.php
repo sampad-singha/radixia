@@ -12,9 +12,9 @@ Route::prefix('auth')->group(function () {
     // Guest / Public Routes (Strictly Throttled)
     // ---------------------------------------------------------------------
     // 'throttle:5,1' allows 5 attempts per minute per IP
-    Route::middleware('throttle:5,1')->group(function () {
+    Route::middleware('throttle:10,1')->group(function () {
         Route::post('register', [AuthController::class, 'register']);
-        Route::post('login', [AuthController::class, 'login']);
+        Route::post('login', [AuthController::class, 'login'])->middleware('throttle:login');
         Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
         Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('password.reset');
 
@@ -43,14 +43,16 @@ Route::prefix('auth')->group(function () {
 
         // Password Confirmation (Sudo Mode Entry)
         // STRICT THROTTLING REQUIRED: Prevents brute-forcing the password to gain sudo access
-        Route::get('/confirmed-password-status', [AuthController::class, 'confirmedPasswordStatus']);
-        Route::post('/confirm-password', [AuthController::class, 'confirmPassword'])
+        Route::get('/get-sudo-user', [AuthController::class, 'getSudoUser']);
+        Route::post('/confirm-sudo', [AuthController::class, 'confirmSudo'])
             ->middleware('throttle:5,1');
 
         // Change Password
         // Should require email verification first
         Route::post('/change-password', [AuthController::class, 'changePassword'])
             ->middleware('verified');
+
+        Route::post('/set-password', [AuthController::class, 'setPassword']);
     });
 
     // Multi-Factor Authentication during Login

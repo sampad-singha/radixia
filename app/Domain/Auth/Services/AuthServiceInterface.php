@@ -13,8 +13,8 @@ interface AuthServiceInterface
     public function resetPassword(array $data): string;
     public function verifyEmail(int $id, string $hash): bool;
     public function resendVerificationNotification(User $user): void;
-    public function confirmPassword(User $user, string $password): bool;
-    public function passwordConfirmedStatus(User $user): bool;
+    public function confirmSudoMode(User $user, string $type, string $value): void;
+    public function getSudoStatus(User $user): array;
     public function listSessions(User $user): array;
     public function revokeSession(User $user, string $tokenId): void;
     public function revokeOtherSessions(User $user): void;

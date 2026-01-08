@@ -4,6 +4,8 @@ use App\Domain\Auth\Exceptions\EmailAlreadyVerifiedException;
 use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
 use App\Domain\Auth\Exceptions\InvalidResetClientException;
+use App\Domain\Auth\Exceptions\PasswordAlreadySetException;
+use App\Domain\Auth\Exceptions\PasswordNotSetException;
 use App\Domain\Auth\Exceptions\SocialProviderException;
 use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
 use App\Domain\Auth\Exceptions\PasswordChangeException;
@@ -214,6 +216,22 @@ return Application::configure(basePath: dirname(__DIR__))
                 'code' => 'EMAIL_REQUIRED',
                 'data' => $e->providerUser,
             ], 422);
+        });
+
+        $exceptions->render(function (PasswordAlreadySetException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => 'PASSWORD_ALREADY_SET',
+                'error' => $e->getMessage()
+            ], 409);
+        });
+
+        $exceptions->render(function (PasswordNotSetException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => 'PASSWORD_NOT_SET',
+                'error' => $e->getMessage()
+            ], 400);
         });
 
     })->create();

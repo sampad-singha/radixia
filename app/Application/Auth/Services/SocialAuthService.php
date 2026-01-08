@@ -112,6 +112,7 @@ readonly class SocialAuthService implements SocialAuthServiceInterface
                 'name' => $providerUser->getName() ?? 'User',
                 'email' => $email,
                 'password' => Hash::make(Str::random(32)),
+                'is_password_set' => false,
                 'email_verified_at' => now(),
             ];
 

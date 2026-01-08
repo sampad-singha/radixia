@@ -7,8 +7,11 @@ use App\Domain\Auth\Exceptions\EmailAlreadyVerifiedException;
 use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
 use App\Domain\Auth\Exceptions\InvalidResetClientException;
+use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
+use App\Domain\Auth\Exceptions\PasswordAlreadySetException;
 use App\Domain\Auth\Exceptions\PasswordChangeException;
 use App\Domain\Auth\Exceptions\PasswordConfirmationException;
+use App\Domain\Auth\Exceptions\PasswordNotSetException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
 use App\Domain\Auth\Repositories\AccessTokenRepositoryInterface;
 use App\Domain\Auth\Services\AuthServiceInterface;
@@ -192,25 +195,61 @@ readonly class AuthService implements AuthServiceInterface
 
     /**
      * @throws PasswordConfirmationException
+     * @throws InvalidTwoFactorCodeException
+     * @throws PasswordNotSetException
      */
-    public function confirmPassword(User $user, string $password): bool
+    public function confirmSudoMode(User $user, string $type, string $value): void
     {
-        if (! Hash::check($password, $user->password)) {
-            throw new PasswordConfirmationException();
+        if ($type === 'password') {
+            if (! $user->is_password_set) {
+                throw new PasswordNotSetException();
+            }
+            if (! $user->password || ! Hash::check($value, $user->password)) {
+                throw new PasswordConfirmationException();
+            }
+        } else {
+            // Re-use your MFA verification logic
+            // This validates the code AND that the method is enabled for the user
+            $this->mfaService->verifyMfaChallenge($user, $value, $type);
         }
 
+        // Success: Extend Sudo Mode
         $token = $this->tokens->current($user);
-
-        if ($token) {
-            $this->tokens->setSudoExpiration($token, config('auth.password_timeout', 600));
-        }
-
-        return true;
+        $this->tokens->setSudoExpiration($token, config('auth.password_timeout', 10800));
     }
 
-    public function passwordConfirmedStatus(User $user): bool
+
+    public function getSudoStatus(User $user): array
     {
-        return $this->tokens->isSudoActive($user);
+        $isSudo = $this->tokens->isSudoActive($user);
+
+        if ($isSudo) {
+            return ['confirmed' => true];
+        }
+
+        // If not sudo, calculate available methods
+        $methods = [];
+
+        // 1. Password available?
+        if ($user->is_password_set && $user->password) {
+            $methods[] = 'password';
+        }
+
+        // 2. MFA methods available?
+        $user->load('mfaMethods');
+        $mfaMethods = $user->mfaMethods->pluck('type')->toArray();
+
+        $methods = array_merge($methods, $mfaMethods);
+
+        // If no password and no MFA (e.g. fresh social user without setup),
+        // maybe force email logic or just return empty (frontend handles "Set Password" prompt)
+        // But usually social users have email, so you could dynamically offer 'email' if you have an EmailMfaProvider logic
+        // that works without explicit setup (like your magic code login).
+
+        return [
+            'confirmed' => false,
+            'available_methods' => array_unique($methods)
+        ];
     }
 
     public function listSessions(User $user): array
@@ -250,5 +289,20 @@ readonly class AuthService implements AuthServiceInterface
 
         $this->users->updatePassword($user, $newPassword);
         $user->tokens()->delete();
+    }
+
+    /**
+     * @throws PasswordAlreadySetException
+     */
+    public function setPassword(User $user, string $password): void
+    {
+        if ($user->is_password_set) {
+            throw new PasswordAlreadySetException("User already has a password.");
+        }
+
+        $user->forceFill([
+            'password' => Hash::make($password),
+            'is_password_set' => true,
+        ])->save();
     }
 }
