@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Application\Auth\Services\SocialAuthService;
+use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
 use App\Domain\Auth\Exceptions\SocialProviderException;
 use App\Domain\Auth\Exceptions\SocialEmailRequiredException;
 use App\Http\Controllers\Controller;
@@ -16,6 +17,7 @@ class SocialAuthController extends Controller
     /**
      * @throws SocialEmailRequiredException
      * @throws SocialProviderException
+     * @throws InvalidTwoFactorCodeException
      */
     public function callback(SocialLoginRequest $request, string $provider): JsonResponse
     {
@@ -26,6 +28,18 @@ class SocialAuthController extends Controller
             $request->validated('email')
         );
 
+        // --- NEW: MFA Handling (same pattern as AuthController::login) ---
+        if (isset($result['mfa_required']) && $result['mfa_required']) {
+            return response()->json([
+                'message' => $result['message'],
+                'mfa_required' => true,
+                'available_methods' => $result['available_methods'] ?? [],
+                'challenge_sent' => $result['challenge_sent'] ?? false,
+                'token' => $result['token'],
+            ], 423); // 423 Locked
+        }
+
+        // --- Standard Success ---
         return response()->json([
             'data' => [
                 'token' => $result['token'],

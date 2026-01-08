@@ -3,6 +3,7 @@
 namespace App\Application\Auth\Services;
 
 use App\Application\Mfa\Services\MfaService;
+use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
 use App\Domain\Auth\Exceptions\SocialProviderException;
 use App\Domain\Auth\Exceptions\SocialEmailRequiredException;
 use App\Domain\Auth\Repositories\AccessTokenRepositoryInterface;
@@ -33,6 +34,7 @@ readonly class SocialAuthService implements SocialAuthServiceInterface
     /**
      * @throws SocialEmailRequiredException
      * @throws SocialProviderException
+     * @throws InvalidTwoFactorCodeException
      */
     public function handleProviderCallback(string $provider, string $code, string $frontendRedirectUrl, ?string $manualEmail = null): array
     {
@@ -129,6 +131,9 @@ readonly class SocialAuthService implements SocialAuthServiceInterface
         return $this->issueToken($user);
     }
 
+    /**
+     * @throws InvalidTwoFactorCodeException
+     */
     private function issueToken(User $user): array
     {
         // 1. Check MFA
@@ -141,7 +146,7 @@ readonly class SocialAuthService implements SocialAuthServiceInterface
                 'social-mfa-pending',
                 request()->ip(),
                 request()->userAgent(),
-                ['mfa:verify']);  // Ability to identify this as a temp token
+                ['mfa:verify']);
             $mfaResult['token'] = $tempToken;
             return $mfaResult;
         }

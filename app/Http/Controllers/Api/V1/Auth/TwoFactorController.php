@@ -80,6 +80,25 @@ class TwoFactorController extends Controller
     /**
      * @throws InvalidTwoFactorCodeException
      */
+    public function challenge(Request $request): JsonResponse
+    {
+        $request->validate(['type' => 'required|string|in:totp,email']);
+
+        // Reuse existing logic.
+        // We pass 'mfa_type' in the data array to force the specific provider logic.
+        $result = $this->mfaService->checkMfaRequirement($request->user(), [
+            'mfa_type' => $request->type
+        ]);
+
+        return response()->json([
+            'message' => $result['message'],
+            'challenge_sent' => $result['challenge_sent'],
+        ]);
+    }
+
+    /**
+     * @throws InvalidTwoFactorCodeException
+     */
     public function verifyLogin(Request $request): JsonResponse
     {
         $request->validate([

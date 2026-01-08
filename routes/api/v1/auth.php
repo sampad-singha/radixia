@@ -56,13 +56,15 @@ Route::prefix('auth')->group(function () {
     // Multi-Factor Authentication during Login
     Route::middleware(['auth:sanctum', 'ability:mfa:verify'])->group(function () {
         Route::post('/verify-login', [TwoFactorController::class, 'verifyLogin']);
+
+        Route::post('challenge', [TwoFactorController::class, 'challenge']);
     });
 
     // ---------------------------------------------------------------------
     // Two-Factor Authentication (Sudo Protected + Verified)
     // ---------------------------------------------------------------------
     // Requires: Logged in + Verified Email + Sudo Mode (Recent Password Confirm)
-    Route::middleware(['auth:sanctum', 'verified', 'sudo', 'ability:access-api'])
+    Route::middleware(['auth:sanctum', 'verified', 'ability:access-api'])
         ->prefix('two-factor')
         ->group(function () {
 
@@ -71,7 +73,8 @@ Route::prefix('auth')->group(function () {
             Route::post('/confirm', [TwoFactorController::class, 'confirm'])
                 ->middleware('throttle:5,1');
 
-            Route::delete('/', [TwoFactorController::class, 'disable']);
+            Route::delete('/', [TwoFactorController::class, 'disable'])
+                ->middleware(['sudo']);
             Route::get('/recovery-codes', [TwoFactorController::class, 'recoveryCodes']);
             Route::post('/recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])
                 ->middleware('throttle:5,1');
