@@ -26,7 +26,7 @@ class EnsureSudoMode
             Carbon::parse($token->sudo_expires_at)->isPast()) {
 
             return response()->json([
-                'message' => 'Password confirmation required.',
+                'message' => 'Sudo mode required.',
                 'code' => 'SUDO_REQUIRED' // Frontend listens for this code
             ], 423); // 423 Locked
         }

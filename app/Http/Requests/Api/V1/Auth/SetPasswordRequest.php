@@ -13,7 +13,7 @@ class SetPasswordRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return ! $this->user()->is_password_set;
+        return true;
     }
 
     /**

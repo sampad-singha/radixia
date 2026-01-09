@@ -46,14 +46,6 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // Handle Missing Ability (403 Forbidden)
-        $exceptions->render(function (AccessDeniedHttpException $e, Request $request) {
-            return response()->json([
-                'message' => 'Access denied. The token does not have the required ability.',
-                'code' => 'ACCESS_DENIED',
-            ], 403);
-        });
-
         $exceptions->render(function (ValidationException $e, Request $request) {
             return response()->json([
                 'message' => 'Validation failed.',
