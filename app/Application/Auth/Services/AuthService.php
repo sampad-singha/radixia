@@ -15,6 +15,7 @@ use App\Domain\Auth\Exceptions\PasswordNotSetException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
 use App\Domain\Auth\Repositories\AccessTokenRepositoryInterface;
 use App\Domain\Auth\Services\AuthServiceInterface;
+use App\Domain\Mfa\Services\MfaServiceInterface;
 use App\Domain\Users\Repositories\UserRepositoryInterface;
 use App\Models\User;
 use App\Notifications\ResetPasswordNotification;
@@ -35,8 +36,10 @@ readonly class AuthService implements AuthServiceInterface
         private CreatesNewUsers                $createsNewUsers,
         private ResetsUserPasswords            $resetsUserPasswords,
         private PasswordBroker                 $passwordBroker,
-        private MfaService                     $mfaService,
-    ) {}
+        private MfaServiceInterface            $mfaService,
+    )
+    {
+    }
 
     public function register(array $data, ?string $ip, ?string $userAgent): array
     {
@@ -64,7 +67,7 @@ readonly class AuthService implements AuthServiceInterface
         $emailForVerification = $user ? $user->getEmailForVerification() : 'email_verification_dummy_value';
         $expectedHash = sha1($emailForVerification);
 
-        if (! $user || ! hash_equals($expectedHash, (string) $hash)) {
+        if (!$user || !hash_equals($expectedHash, (string)$hash)) {
             throw new EmailVerificationException();
         }
 
@@ -100,7 +103,7 @@ readonly class AuthService implements AuthServiceInterface
     {
         // 1. Credentials Check
         $user = $this->users->findByEmail($data['email']);
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
+        if (!$user || !Hash::check($data['password'], $user->password)) {
             throw new InvalidCredentialsException();
         }
 
@@ -134,7 +137,7 @@ readonly class AuthService implements AuthServiceInterface
         $currentToken = $this->tokens->current($user);
 
         if ($currentToken) {
-            $this->tokens->revoke($user, (string) $currentToken->id);
+            $this->tokens->revoke($user, (string)$currentToken->id);
         }
     }
 
@@ -145,14 +148,14 @@ readonly class AuthService implements AuthServiceInterface
     {
         $resetUrlBase = config("auth.reset_clients.$client");
 
-        if (! $resetUrlBase) {
+        if (!$resetUrlBase) {
             throw new InvalidResetClientException('Invalid password reset client.');
         }
 
         // 1. Get the user
         $user = $this->users->findByEmail($data['email']);
 
-        if (! $user) {
+        if (!$user) {
             // Return success to prevent email enumeration, or throw based on your policy
             return Password::RESET_LINK_SENT;
         }
@@ -201,10 +204,10 @@ readonly class AuthService implements AuthServiceInterface
     public function confirmSudoMode(User $user, string $type, string $value): void
     {
         if ($type === 'password') {
-            if (! $user->is_password_set) {
+            if (!$user->is_password_set) {
                 throw new PasswordNotSetException();
             }
-            if (! $user->password || ! Hash::check($value, $user->password)) {
+            if (!$user->password || !Hash::check($value, $user->password)) {
                 throw new PasswordConfirmationException();
             }
         } else {
@@ -266,11 +269,11 @@ readonly class AuthService implements AuthServiceInterface
     {
         $current = $this->tokens->current($user);
 
-        if (! $current) {
+        if (!$current) {
             return;
         }
 
-        $this->tokens->revokeOthers($user, (int) $current->id);
+        $this->tokens->revokeOthers($user, (int)$current->id);
     }
 
     /**
@@ -279,7 +282,7 @@ readonly class AuthService implements AuthServiceInterface
      */
     public function changePassword(User $user, string $currentPassword, string $newPassword): void
     {
-        if (! Hash::check($currentPassword, $user->password)) {
+        if (!Hash::check($currentPassword, $user->password)) {
             throw new PasswordConfirmationException();
         }
 

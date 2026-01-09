@@ -92,7 +92,7 @@ class AuthController extends Controller
     {
         $status = $this->auth->forgotPassword(
             $request->validated(),
-            $request->header('X-Client', 'web')
+            $request->validated('client_type'),
         );
 
         return response()->json([

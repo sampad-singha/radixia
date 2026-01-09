@@ -67,7 +67,7 @@ readonly class MfaService implements MfaServiceInterface
         $codes = Collection::times(8, fn () => Str::random(10) . '-' . Str::random(10))->all();
 
         $method->update([
-            'backup_codes' => encrypt(json_encode($codes))
+            'backup_codes' => $codes
         ]);
 
         return $codes;
@@ -78,7 +78,7 @@ readonly class MfaService implements MfaServiceInterface
         $method = $user->mfaMethods()->where('type', 'totp')->first();
 
         if ($method && $method->backup_codes) {
-            return json_decode(decrypt($method->backup_codes), true);
+            return $method->backup_codes;
         }
 
         return [];

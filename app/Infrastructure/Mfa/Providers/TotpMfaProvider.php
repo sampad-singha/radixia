@@ -28,7 +28,6 @@ readonly class TotpMfaProvider implements MfaProviderInterface
         // We assume the input might be a recovery code.
         // Recovery codes usually have a specific format (e.g., 10 chars), but we can just check the array.
         if ($method->backup_codes) {
-//            $backupCodes = json_decode(decrypt($method->backup_codes), true);
             $backupCodes = $method->backup_codes;
 
             // Search for the code in the array
@@ -79,6 +78,9 @@ readonly class TotpMfaProvider implements MfaProviderInterface
         ];
     }
 
+    /**
+     * @throws Exception
+     */
     public function enable(User $user, string $secret, string $code): void
     {
         if (! $this->provider->verify($secret, $code)) {
