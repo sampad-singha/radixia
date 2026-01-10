@@ -92,7 +92,7 @@ class AuthController extends Controller
     {
         $status = $this->auth->forgotPassword(
             $request->validated(),
-            $request->header('X-Client', 'web')
+            $request->validated('client_type'),
         );
 
         return response()->json([
@@ -130,7 +130,7 @@ class AuthController extends Controller
     public function confirmSudo(ConfirmSudoRequest $request): JsonResponse
     {
         $type = $request->validated('type');
-        $value = $type === 'password' ? $request->validated('password') : $request->validated('code');
+        $value = $request->validated('value');
 
         $this->auth->confirmSudoMode($request->user(), $type, $value);
 

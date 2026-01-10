@@ -31,4 +31,16 @@ interface MfaServiceInterface
      * Get existing recovery codes.
      */
     public function getRecoveryCodes(User $user): array;
+
+    /**
+     * Check if MFA is required for the user based on provided data.
+     * Returns an array with details if MFA is required, or null if not.
+     */
+    public function checkMfaRequirement(User $user, array $data): ?array;
+
+    /**
+     * Verify the provided MFA challenge code.
+     * Throws exception if verification fails.
+     */
+    public function verifyMfaChallenge(User $user, string $code, string $type): void;
 }
