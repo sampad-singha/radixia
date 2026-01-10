@@ -12,7 +12,7 @@ Route::prefix('auth')->group(function () {
     // Guest / Public Routes (Strictly Throttled)
     // ---------------------------------------------------------------------
     // 'throttle:5,1' allows 5 attempts per minute per IP
-    Route::middleware('throttle:10,1')->group(function () {
+    Route::middleware('throttle:5,1')->group(function () {
         Route::post('register', [AuthController::class, 'register']);
         Route::post('login', [AuthController::class, 'login'])->middleware('throttle:login');
         Route::post('forgot-password', [AuthController::class, 'forgotPassword']);

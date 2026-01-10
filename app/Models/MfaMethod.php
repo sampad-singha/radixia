@@ -14,7 +14,6 @@ class MfaMethod extends Model
         'backup_codes',
         'is_default',
         'last_used_at',
-        'data'
     ];
 
     protected $hidden = [

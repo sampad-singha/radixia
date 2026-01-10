@@ -22,6 +22,8 @@ class SocialAccount extends Model
     {
         return [
             'expires_in' => 'integer',
+            'token' => 'encrypted',
+            'refresh_token' => 'encrypted',
         ];
     }
 
