@@ -4,11 +4,15 @@ use App\Domain\Auth\Exceptions\EmailAlreadyVerifiedException;
 use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
 use App\Domain\Auth\Exceptions\InvalidResetClientException;
+use App\Domain\Auth\Exceptions\PasswordAlreadySetException;
+use App\Domain\Auth\Exceptions\PasswordNotSetException;
+use App\Domain\Auth\Exceptions\SocialProviderException;
 use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
 use App\Domain\Auth\Exceptions\PasswordChangeException;
 use App\Domain\Auth\Exceptions\PasswordConfirmationException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
 use App\Domain\Auth\Exceptions\PasswordResetLinkException;
+use App\Domain\Auth\Exceptions\SocialEmailRequiredException;
 use App\Domain\Auth\Exceptions\TwoFactorNotConfirmedException;
 use App\Domain\Auth\Exceptions\TwoFactorNotEnabledException;
 use App\Domain\Auth\Exceptions\TwoFactorRequiredException;
@@ -21,6 +25,8 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Password;
+use Laravel\Sanctum\Http\Middleware\CheckAbilities;
+use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -33,6 +39,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'sudo' => EnsureSudoMode::class,
             'verified' => EnsureEmailIsVerifiedApi::class,
+            'ability' => CheckForAnyAbility::class,
+            'abilities' => CheckAbilities::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -185,5 +193,33 @@ return Application::configure(basePath: dirname(__DIR__))
             ], 400);
         });
 
+        $exceptions->render(function (SocialProviderException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code'    => $e->errorCode,
+            ], $e->getCode());
+        });
+
+        $exceptions->render(function (SocialEmailRequiredException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => 'EMAIL_REQUIRED',
+                'data' => $e->providerUser,
+            ], 422);
+        });
+
+        $exceptions->render(function (PasswordAlreadySetException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => 'PASSWORD_ALREADY_SET',
+            ], 409);
+        });
+
+        $exceptions->render(function (PasswordNotSetException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => 'PASSWORD_NOT_SET',
+            ], 400);
+        });
 
     })->create();

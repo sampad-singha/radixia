@@ -8,7 +8,7 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 interface AccessTokenRepositoryInterface
 {
-    public function create(User $user, string $deviceName, ?string $ip, ?string $userAgent): string;
+    public function create(User $user, string $deviceName, ?string $ip, ?string $userAgent, ?array $abilities = ['*']): string;
 
     public function current(User $user): ?PersonalAccessToken;
 

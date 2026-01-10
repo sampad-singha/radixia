@@ -2,46 +2,44 @@
 
 namespace App\Application\Auth\Services;
 
+use App\Application\Mfa\Services\MfaService;
 use App\Domain\Auth\Exceptions\EmailAlreadyVerifiedException;
 use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
 use App\Domain\Auth\Exceptions\InvalidResetClientException;
 use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
+use App\Domain\Auth\Exceptions\PasswordAlreadySetException;
 use App\Domain\Auth\Exceptions\PasswordChangeException;
 use App\Domain\Auth\Exceptions\PasswordConfirmationException;
+use App\Domain\Auth\Exceptions\PasswordNotSetException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
-use App\Domain\Auth\Exceptions\TwoFactorNotConfirmedException;
-use App\Domain\Auth\Exceptions\TwoFactorNotEnabledException;
 use App\Domain\Auth\Repositories\AccessTokenRepositoryInterface;
-use App\Domain\Auth\Repositories\TwoFactorRepositoryInterface;
 use App\Domain\Auth\Services\AuthServiceInterface;
+use App\Domain\Mfa\Services\MfaServiceInterface;
 use App\Domain\Users\Repositories\UserRepositoryInterface;
 use App\Models\User;
 use App\Notifications\ResetPasswordNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Contracts\Auth\PasswordBroker;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 use Laravel\Fortify\Contracts\ResetsUserPasswords;
-use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
-use Laravel\Fortify\RecoveryCode;
 use Throwable;
 
-class AuthService implements AuthServiceInterface
+readonly class AuthService implements AuthServiceInterface
 {
     public function __construct(
-        private readonly UserRepositoryInterface $users,
-        private readonly AccessTokenRepositoryInterface $tokens,
-        private readonly TwoFactorRepositoryInterface $twoFactor,
-        private readonly CreatesNewUsers $createsNewUsers,
-        private readonly ResetsUserPasswords $resetsUserPasswords,
-        private readonly PasswordBroker $passwordBroker,
-        private readonly TwoFactorAuthenticationProvider $twoFactorProvider,
-    ) {}
+        private UserRepositoryInterface        $users,
+        private AccessTokenRepositoryInterface $tokens,
+        private CreatesNewUsers                $createsNewUsers,
+        private ResetsUserPasswords            $resetsUserPasswords,
+        private PasswordBroker                 $passwordBroker,
+        private MfaServiceInterface            $mfaService,
+    )
+    {
+    }
 
     public function register(array $data, ?string $ip, ?string $userAgent): array
     {
@@ -69,7 +67,7 @@ class AuthService implements AuthServiceInterface
         $emailForVerification = $user ? $user->getEmailForVerification() : 'email_verification_dummy_value';
         $expectedHash = sha1($emailForVerification);
 
-        if (! $user || ! hash_equals($expectedHash, (string) $hash)) {
+        if (!$user || !hash_equals($expectedHash, (string)$hash)) {
             throw new EmailVerificationException();
         }
 
@@ -98,48 +96,40 @@ class AuthService implements AuthServiceInterface
     }
 
     /**
-     * @throws InvalidCredentialsException|InvalidTwoFactorCodeException
+     * @throws InvalidCredentialsException
      * @throws Throwable
      */
     public function login(array $data, ?string $ip, ?string $userAgent): array
     {
+        // 1. Credentials Check
         $user = $this->users->findByEmail($data['email']);
-
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
+        if (!$user || !Hash::check($data['password'], $user->password)) {
             throw new InvalidCredentialsException();
         }
 
-        // 1. Read-Only Check: Is 2FA required?
-        // We do this OUTSIDE the transaction because it's just a check and might return early.
-        if ($user->hasEnabledTwoFactorAuthentication()) {
-            if (empty($data['two_factor_code']) && empty($data['recovery_code'])) {
-                return [
-                    'two_factor_required' => true,
-                    'message' => 'Two-factor authentication required.',
-                ];
-            }
+        // 2. Check MFA
+        $mfaResult = $this->mfaService->checkMfaRequirement($user, $data);
+
+        if ($mfaResult) {
+            // --- MISSING PART: Create Temp Token ---
+            $tempToken = $this->tokens->create(
+                $user,
+                'login-mfa-pending', // Name matters!
+                $ip,
+                $userAgent,
+                ['mfa:verify']  // Ability to identify this as a temp token
+            );
+
+            // Add token to result so Controller can send it
+            $mfaResult['token'] = $tempToken;
+            return $mfaResult;
         }
 
-        // 2. Transactional Write Operations
-        // We wrap both "Consume Code" and "Create Token" so they succeed or fail together.
-        return DB::transaction(function () use ($user, $data, $ip, $userAgent) {
-            $remainingCodes = null;
+        // 3. Issue Token
+        $token = $this->tokens->create($user, $data['device_name'], $ip, $userAgent);
+        $user->unsetRelation('mfaMethods');
 
-            if ($user->hasEnabledTwoFactorAuthentication()) {
-                // This method validates AND deletes the recovery code from the DB.
-                // If the transaction rolls back, this deletion is undone.
-                $remainingCodes = $this->verifyTwoFactorCode($user, $data);
-            }
-
-            // Create token and persist metadata
-            $token = $this->tokens->create($user, $data['device_name'], $ip, $userAgent);
-
-            return [
-                'user' => $user,
-                'token' => $token,
-                'recovery_codes_remaining' => $remainingCodes
-            ];
-        });
+        return ['user' => $user, 'token' => $token];
     }
 
     public function logout(User $user): void
@@ -147,7 +137,7 @@ class AuthService implements AuthServiceInterface
         $currentToken = $this->tokens->current($user);
 
         if ($currentToken) {
-            $this->tokens->revoke($user, (string) $currentToken->id);
+            $this->tokens->revoke($user, (string)$currentToken->id);
         }
     }
 
@@ -158,14 +148,14 @@ class AuthService implements AuthServiceInterface
     {
         $resetUrlBase = config("auth.reset_clients.$client");
 
-        if (! $resetUrlBase) {
+        if (!$resetUrlBase) {
             throw new InvalidResetClientException('Invalid password reset client.');
         }
 
         // 1. Get the user
         $user = $this->users->findByEmail($data['email']);
 
-        if (! $user) {
+        if (!$user) {
             // Return success to prevent email enumeration, or throw based on your policy
             return Password::RESET_LINK_SENT;
         }
@@ -208,125 +198,60 @@ class AuthService implements AuthServiceInterface
 
     /**
      * @throws PasswordConfirmationException
+     * @throws InvalidTwoFactorCodeException
+     * @throws PasswordNotSetException
      */
-    public function confirmPassword(User $user, string $password): bool
+    public function confirmSudoMode(User $user, string $type, string $value): void
     {
-        if (! Hash::check($password, $user->password)) {
-            throw new PasswordConfirmationException();
+        if ($type === 'password') {
+            if (!$user->is_password_set) {
+                throw new PasswordNotSetException();
+            }
+            if (!$user->password || !Hash::check($value, $user->password)) {
+                throw new PasswordConfirmationException();
+            }
+        } else {
+            // Re-use your MFA verification logic
+            // This validates the code AND that the method is enabled for the user
+            $this->mfaService->verifyMfaChallenge($user, $value, $type);
         }
 
+        // Success: Extend Sudo Mode
         $token = $this->tokens->current($user);
+        $this->tokens->setSudoExpiration($token, config('auth.password_timeout', 10800));
+    }
 
-        if ($token) {
-            $this->tokens->setSudoExpiration($token, config('auth.password_timeout', 600));
+
+    public function getSudoStatus(User $user): array
+    {
+        $isSudo = $this->tokens->isSudoActive($user);
+
+        if ($isSudo) {
+            return ['confirmed' => true];
         }
 
-        return true;
-    }
+        // If not sudo, calculate available methods
+        $methods = [];
 
-    public function passwordConfirmedStatus(User $user): bool
-    {
-        return $this->tokens->isSudoActive($user);
-    }
+        // 1. Password available?
+        if ($user->is_password_set && $user->password) {
+            $methods[] = 'password';
+        }
 
-    public function enableTwoFactor(User $user): array
-    {
-        $secretKey = $this->twoFactorProvider->generateSecretKey();
+        // 2. MFA methods available?
+        $user->load('mfaMethods');
+        $mfaMethods = $user->mfaMethods->pluck('type')->toArray();
 
-        $recoveryCodes = Collection::times(8, fn () => RecoveryCode::generate())->all();
+        $methods = array_merge($methods, $mfaMethods);
 
-        $this->twoFactor->enable($user, $secretKey, $recoveryCodes);
-
-        $appName = config('app.name');
-        $otpAuthUrl = sprintf(
-            'otpauth://totp/%s:%s?secret=%s&issuer=%s',
-            rawurlencode($appName),
-            rawurlencode($user->email),
-            $secretKey,
-            rawurlencode($appName)
-        );
+        if (empty($methods)) {
+            $methods[] = 'email';
+        }
 
         return [
-            'two_factor_url' => $otpAuthUrl,
-            'secret' => $secretKey,
-            'recovery_codes' => $recoveryCodes,
+            'confirmed' => false,
+            'available_methods' => array_unique($methods)
         ];
-    }
-
-    /**
-     * @throws TwoFactorNotConfirmedException
-     * @throws TwoFactorNotEnabledException
-     */
-    public function regenerateRecoveryCodes(User $user): array
-    {
-        if (! $user->hasEnabledTwoFactorAuthentication()) {
-            throw new TwoFactorNotEnabledException();
-        }
-
-        if (is_null($user->two_factor_confirmed_at)) {
-            throw new TwoFactorNotConfirmedException();
-        }
-
-        $codes = Collection::times(8, fn () => RecoveryCode::generate())->all();
-
-        return $this->twoFactor->regenerateRecoveryCodes($user, $codes);
-    }
-
-
-    /**
-     * @throws InvalidTwoFactorCodeException
-     */
-    public function confirmTwoFactor(User $user, string $code): void
-    {
-        $secret = $this->twoFactor->getSecret($user);
-
-        if (! $secret || ! $this->twoFactorProvider->verify($secret, $code)) {
-            throw new InvalidTwoFactorCodeException();
-        }
-
-        $this->twoFactor->confirm($user);
-    }
-
-    public function disableTwoFactor(User $user): void
-    {
-        $this->twoFactor->disable($user);
-    }
-
-    public function getRecoveryCodes(User $user): array
-    {
-        return $this->twoFactor->getRecoveryCodes($user);
-    }
-
-
-    /**
-     * @throws InvalidTwoFactorCodeException
-     */
-    private function verifyTwoFactorCode(User $user, array $data): ?int
-    {
-        if (! empty($data['recovery_code'])) {
-            $codes = $this->twoFactor->getRecoveryCodes($user);
-
-            $index = array_search($data['recovery_code'], $codes, true);
-
-            if ($index === false) {
-                throw new InvalidTwoFactorCodeException();
-            }
-
-            unset($codes[$index]);
-            $codes = array_values($codes);
-
-            $this->twoFactor->regenerateRecoveryCodes($user, $codes);
-            return count($codes);
-        }
-
-        if (! empty($data['two_factor_code'])) {
-            $secret = $this->twoFactor->getSecret($user);
-
-            if (! $secret || ! $this->twoFactorProvider->verify($secret, $data['two_factor_code'])) {
-                throw new InvalidTwoFactorCodeException();
-            }
-        }
-        return null;
     }
 
     public function listSessions(User $user): array
@@ -343,11 +268,11 @@ class AuthService implements AuthServiceInterface
     {
         $current = $this->tokens->current($user);
 
-        if (! $current) {
+        if (!$current) {
             return;
         }
 
-        $this->tokens->revokeOthers($user, (int) $current->id);
+        $this->tokens->revokeOthers($user, (int)$current->id);
     }
 
     /**
@@ -356,7 +281,7 @@ class AuthService implements AuthServiceInterface
      */
     public function changePassword(User $user, string $currentPassword, string $newPassword): void
     {
-        if (! Hash::check($currentPassword, $user->password)) {
+        if (!Hash::check($currentPassword, $user->password)) {
             throw new PasswordConfirmationException();
         }
 
@@ -366,5 +291,20 @@ class AuthService implements AuthServiceInterface
 
         $this->users->updatePassword($user, $newPassword);
         $user->tokens()->delete();
+    }
+
+    /**
+     * @throws PasswordAlreadySetException
+     */
+    public function setPassword(User $user, string $password): void
+    {
+        if ($user->is_password_set) {
+            throw new PasswordAlreadySetException("User already has a password.");
+        }
+
+        $user->forceFill([
+            'password' => Hash::make($password),
+            'is_password_set' => true,
+        ])->save();
     }
 }

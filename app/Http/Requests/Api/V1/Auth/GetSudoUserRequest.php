@@ -5,7 +5,7 @@ namespace App\Http\Requests\Api\V1\Auth;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ConfirmTwoFactorRequest extends FormRequest
+class GetSudoUserRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,9 +22,6 @@ class ConfirmTwoFactorRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'code' => ['required', 'string'],
-            'type' => ['required', 'string', 'in:totp,email'],
-        ];
+        return [];
     }
 }

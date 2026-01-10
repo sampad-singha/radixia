@@ -13,7 +13,16 @@ return new class extends Migration
     {
         Schema::create('social_accounts', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('provider_name'); // 'google', 'facebook'
+            $table->string('provider_id');
+            $table->text('token');           // Store Access Token
+            $table->text('refresh_token')->nullable(); // For offline access
+            $table->integer('expires_in')->nullable(); // Token lifespan in seconds
+            $table->string('avatar')->nullable();
             $table->timestamps();
+
+            $table->unique(['provider_name', 'provider_id']);
         });
     }
 

@@ -5,10 +5,13 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\SocialAccount;
+use App\Models\MfaMethod;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -24,6 +27,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
+        'is_password_set',
     ];
 
     /**
@@ -53,6 +57,18 @@ class User extends Authenticatable implements MustVerifyEmail
             'two_factor_confirmed_at' => 'datetime',
             'pending_email_token' => 'hashed',
             'pending_email_expires_at' => 'datetime',
+            'is_password_set' => 'boolean',
         ];
     }
+
+    public function socialAccounts(): HasMany
+    {
+        return $this->hasMany(SocialAccount::class);
+    }
+
+    public function mfaMethods(): HasMany
+    {
+        return $this->hasMany(MfaMethod::class);
+    }
+
 }
