@@ -14,7 +14,7 @@ Route::prefix('auth')->group(function () {
     // 'throttle:5,1' allows 5 attempts per minute per IP
     Route::middleware('throttle:5,1')->group(function () {
         Route::post('register', [AuthController::class, 'register']);
-        Route::post('login', [AuthController::class, 'login'])->middleware('throttle:login');
+        Route::post('login', [AuthController::class, 'login']);
         Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
         Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('password.reset');
 
@@ -52,7 +52,8 @@ Route::prefix('auth')->group(function () {
         Route::post('/change-password', [AuthController::class, 'changePassword'])
             ->middleware('verified');
 
-        Route::post('/set-password', [AuthController::class, 'setPassword']);
+        Route::post('/set-password', [AuthController::class, 'setPassword'])
+            ->middleware('verified');
     });
 
     // Multi-Factor Authentication during Login

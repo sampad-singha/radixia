@@ -9,6 +9,7 @@ use App\Domain\Auth\Exceptions\SocialEmailRequiredException;
 use App\Domain\Auth\Repositories\AccessTokenRepositoryInterface;
 use App\Domain\Auth\Repositories\SocialAccountRepositoryInterface;
 use App\Domain\Auth\Services\SocialAuthServiceInterface;
+use App\Domain\Mfa\Services\MfaServiceInterface;
 use App\Domain\Users\Repositories\UserRepositoryInterface;
 use App\Models\User;
 use Exception;
@@ -16,7 +17,6 @@ use GuzzleHttp\Exception\ClientException;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
-use Laravel\Socialite\Two\User as SocialiteUser;
 use Log;
 
 readonly class SocialAuthService implements SocialAuthServiceInterface
@@ -25,7 +25,7 @@ readonly class SocialAuthService implements SocialAuthServiceInterface
         private UserRepositoryInterface          $users,
         private SocialAccountRepositoryInterface $socialAccounts,
         private AccessTokenRepositoryInterface   $tokens,
-        private MfaService                       $mfaService,
+        private MfaServiceInterface              $mfaService,
     )
     {
     }
@@ -36,12 +36,11 @@ readonly class SocialAuthService implements SocialAuthServiceInterface
      * @throws SocialProviderException
      * @throws InvalidTwoFactorCodeException
      */
-    public function handleProviderCallback(string $provider, string $code, string $frontendRedirectUrl, ?string $manualEmail = null): array
+    // Remove $manualEmail parameter completely
+    public function handleProviderCallback(string $provider, string $frontendRedirectUrl): array
     {
-        /*The code is not directly used here because Socialite handles the exchange internally.
-        But we kept it to make it clear which parameter is expected.*/
         try {
-            /** @var SocialiteUser $providerUser */
+            /** @var \Laravel\Socialite\Contracts\User $providerUser */
             $providerUser = Socialite::driver($provider)
                 ->redirectUrl($frontendRedirectUrl)
                 ->stateless()
@@ -50,37 +49,23 @@ readonly class SocialAuthService implements SocialAuthServiceInterface
             $statusCode = $e->getResponse()->getStatusCode();
             $body = json_decode($e->getResponse()->getBody()->getContents(), true);
 
-            // Log deep details for dev
-            Log::error("Social Auth Provider Error [{$statusCode}]: " . json_encode($body));
+            Log::error('Social Auth Provider Error', ['statusCode' => $statusCode, 'body' => $body]);
 
             // CASE A: Server Side Config Error (401 Unauthorized, 403 Forbidden)
             if ($statusCode === 401 || $statusCode === 403) {
-                throw new SocialProviderException(
-                    "Social authentication service is unavailable.",
-                    'SOCIAL_CONFIG_ERROR',
-                    500
-                );
+                throw new SocialProviderException('Social authentication service is unavailable.', 'SOCIAL_CONFIG_ERROR', 500);
             }
 
-            // CASE B: Client Side Input Error (400 Bad Request)
-            // (invalid_grant, redirect_uri_mismatch, etc.)
-            throw new SocialProviderException(
-                "Social login failed. The session may have expired.",
-                'SOCIAL_LOGIN_FAILED',
-                400
-            );
+            // CASE B: Client Side Input Error (400 Bad Request - invalid_grant, etc)
+            throw new SocialProviderException('Social login failed. The session may have expired.', 'SOCIAL_LOGIN_FAILED', 400);
 
         } catch (Exception $e) {
-            Log::error("Social Auth General Error: " . $e->getMessage());
-
-            throw new SocialProviderException(
-                "An unexpected error occurred during login.",
-                'INTERNAL_ERROR',
-                500
-            );
+            Log::error('Social Auth General Error: ' . $e->getMessage());
+            throw new SocialProviderException('An unexpected error occurred during login.', 'INTERNAL_ERROR', 500);
         }
 
-        // 1. Check Linked Account
+        // 1. Check Linked Account (Returning User)
+        // If this provider ID is already linked, we trust it completely.
         $account = $this->socialAccounts->findByProvider($provider, $providerUser->getId());
 
         if ($account) {
@@ -90,34 +75,27 @@ readonly class SocialAuthService implements SocialAuthServiceInterface
                 $providerUser->refreshToken,
                 $providerUser->expiresIn
             );
+
             return $this->issueToken($account->user);
         }
 
-        // 2. Validate Email
-        $email = $providerUser->getEmail() ?? $manualEmail;
+        // 2. Strict Email Requirement
+        // We reject the login if the provider does not return a verified email.
+        $email = $providerUser->getEmail();
 
-        if (!$email) {
-            throw new SocialEmailRequiredException([
-                'id' => $providerUser->getId(),
-                'name' => $providerUser->getName(),
-                'avatar' => $providerUser->getAvatar(),
-            ]);
+        if (! $email) {
+            throw new SocialProviderException(
+                'We could not verify your email address from ' . $provider . '. Please register with email and password first, then link your account.',
+                'SOCIAL_EMAIL_MISSING',
+                400
+            );
         }
 
-        // 3. Register or Link
+        // 3. Check for Existing User
         $user = $this->users->findByEmail($email);
 
-        if (!$user) {
-            $userData = [
-                'name' => $providerUser->getName() ?? 'User',
-                'email' => $email,
-                'password' => Hash::make(Str::random(32)),
-                'is_password_set' => false,
-                'email_verified_at' => now(),
-            ];
-
-            $user = $this->socialAccounts->registerUserWithSocial($userData, $provider, $providerUser);
-        } else {
+        if ($user) {
+            // Safe to link because the provider has verified the email matches our record.
             $this->socialAccounts->create(
                 $user,
                 $provider,
@@ -127,14 +105,24 @@ readonly class SocialAuthService implements SocialAuthServiceInterface
                 $providerUser->expiresIn,
                 $providerUser->getAvatar()
             );
+        } else {
+            // 4. Registration (New User)
+            // Safe to register and auto-verify because the email comes from a trusted provider.
+            $userData = [
+                'name' => $providerUser->getName() ?? 'User',
+                'email' => $email,
+                'password' => Hash::make(Str::random(32)),
+                'is_password_set' => false,
+                'email_verified_at' => now(),
+            ];
+
+            $user = $this->socialAccounts->registerUserWithSocial($userData, $provider, $providerUser);
         }
 
         return $this->issueToken($user);
     }
 
-    /**
-     * @throws InvalidTwoFactorCodeException
-     */
+
     private function issueToken(User $user): array
     {
         // 1. Check MFA

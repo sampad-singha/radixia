@@ -244,10 +244,9 @@ readonly class AuthService implements AuthServiceInterface
 
         $methods = array_merge($methods, $mfaMethods);
 
-        // If no password and no MFA (e.g. fresh social user without setup),
-        // maybe force email logic or just return empty (frontend handles "Set Password" prompt)
-        // But usually social users have email, so you could dynamically offer 'email' if you have an EmailMfaProvider logic
-        // that works without explicit setup (like your magic code login).
+        if (empty($methods)) {
+            $methods[] = 'email';
+        }
 
         return [
             'confirmed' => false,

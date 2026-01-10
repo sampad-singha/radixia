@@ -59,7 +59,6 @@ class TwoFactorController extends Controller
 
     public function regenerateRecoveryCodes(Request $request): JsonResponse
     {
-        // Usually TOTP specific, but service handles logic
         $codes = $this->mfaService->regenerateRecoveryCodes($request->user());
 
         return response()->json([
@@ -77,15 +76,12 @@ class TwoFactorController extends Controller
         ]);
     }
 
-    /**
-     * @throws InvalidTwoFactorCodeException
-     */
     public function challenge(Request $request): JsonResponse
     {
         $request->validate(['type' => 'required|string|in:totp,email']);
 
-        // Reuse existing logic.
-        // We pass 'mfa_type' in the data array to force the specific provider logic.
+        // Reuse existing logic by passing the requested MFA type as a provider hint.
+        // The service expects this value under the 'mfa_type' key.
         $result = $this->mfaService->checkMfaRequirement($request->user(), [
             'mfa_type' => $request->type
         ]);
@@ -104,33 +100,34 @@ class TwoFactorController extends Controller
         $request->validate([
             'code' => 'required|string',
             'type' => 'required|string|in:totp,email',
-            'device_name' => 'required|string' // Needed for new token
+            'device_name' => 'required|string'
         ]);
 
-        // 1. Verify Code using the new service method
+        // 1. Verify Code using the service
         $this->mfaService->verifyMfaChallenge(
             $request->user(),
-            $request->code,
-            $request->type
+            $request->input('code'),
+            $request->input('type')
         );
 
-        // 2. Issue Real Token
+        // 2. Issue Real Token (Assuming $this->tokens is your AccessTokenRepositoryInterface)
         $token = $this->tokens->create(
             $request->user(),
-            $request->device_name,
+            $request->input('device_name'),
             $request->ip(),
             $request->userAgent()
         );
 
-        // 3. Revoke Temp Token (if applicable)
-        if ($request->user()->currentAccessToken()->name === 'login-mfa-pending') {
-            $request->user()->currentAccessToken()->delete();
+        // 3. Revoke Temp Token (Robust check for any MFA pending token)
+        $currentToken = $request->user()->currentAccessToken();
+        if ($currentToken && str_ends_with($currentToken->name, '-mfa-pending')) {
+            $currentToken->delete();
         }
 
         return response()->json([
             'message' => 'Login successful.',
             'data' => [
-                'token' => $token, // Plain text token from repo
+                'token' => $token,
                 'user' => $request->user()
             ]
         ]);

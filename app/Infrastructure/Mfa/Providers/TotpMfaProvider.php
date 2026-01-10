@@ -23,10 +23,8 @@ readonly class TotpMfaProvider implements MfaProviderInterface
         if (! $method || ! $method->secret) {
             return false;
         }
-
-        // 1. Check Recovery Codes (The Bypass)
-        // We assume the input might be a recovery code.
-        // Recovery codes usually have a specific format (e.g., 10 chars), but we can just check the array.
+        // 1. Backup Code Verification
+        // First, check if the code matches any backup codes.
         if ($method->backup_codes) {
             $backupCodes = $method->backup_codes;
 
@@ -62,11 +60,8 @@ readonly class TotpMfaProvider implements MfaProviderInterface
         $user->mfaMethods()->updateOrCreate(
             ['type' => 'totp'],
             [
-                'secret' => $secret, // Model handles encryption
-                'backup_codes' => $recoveryCodes, // Model handles JSON+Encryption
-                // Keep is_default as whatever it was, or false if new.
-                // If we force false, we might disable an active method if they are just regenerating?
-                // For "Enable" flow, usually we assume they are setting it up.
+                'secret' => $secret,
+                'backup_codes' => $recoveryCodes,
                 'is_default' => false
             ]
         );

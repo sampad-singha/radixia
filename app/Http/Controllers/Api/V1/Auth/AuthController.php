@@ -10,6 +10,7 @@ use App\Http\Requests\Api\V1\Auth\ChangePasswordRequest;
 use App\Http\Requests\Api\V1\Auth\ConfirmPasswordRequest;
 use App\Http\Requests\Api\V1\Auth\ConfirmSudoRequest;
 use App\Http\Requests\Api\V1\Auth\ForgotPasswordRequest;
+use App\Http\Requests\Api\V1\Auth\GetSudoUserRequest;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Requests\Api\V1\Auth\RegisterRequest;
 use App\Http\Requests\Api\V1\Auth\ResetPasswordRequest;
@@ -78,13 +79,6 @@ class AuthController extends Controller
             ],
         ];
 
-        // Warn if recovery codes are running low (Only relevant if they just used one)
-        // Note: You might want to remove this if you aren't strictly tracking "remaining" count in the main login response anymore,
-        // but if your AuthService still returns it, keep it.
-        if (isset($result['recovery_codes_remaining']) && $result['recovery_codes_remaining'] <= 3) {
-            $response['message'] = "Warning: You only have {$result['recovery_codes_remaining']} recovery codes left. Please regenerate them.";
-        }
-
         return response()->json($response);
     }
 
@@ -139,7 +133,7 @@ class AuthController extends Controller
         ]);
     }
 
-    public function getSudoUser(Request $request): JsonResponse
+    public function getSudoUser(GetSudoUserRequest $request): JsonResponse
     {
         // Use the new service method
         $status = $this->auth->getSudoStatus($request->user());

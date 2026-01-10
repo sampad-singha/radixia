@@ -5,7 +5,7 @@ namespace App\Http\Requests\Api\V1\Auth;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class getSudoUserRequest extends FormRequest
+class GetSudoUserRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,12 +22,6 @@ class getSudoUserRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'type' => 'required|string|in:password,totp,email',
-            // Password required if type is password
-            'password' => 'required_if:type,password|string',
-            // Code required if type is NOT password
-            'code' => 'required_unless:type,password|string',
-        ];
+        return [];
     }
 }

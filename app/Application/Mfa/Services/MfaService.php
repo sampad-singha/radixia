@@ -36,7 +36,6 @@ readonly class MfaService implements MfaServiceInterface
 
         $user->mfaMethods()->where('type', $type)->update([
             'is_default' => true,
-            // 'confirmed_at' => now(), // If you have this column
         ]);
     }
 
@@ -96,13 +95,22 @@ readonly class MfaService implements MfaServiceInterface
             return null; // Proceed
         }
 
-        $requestedType = $data['mfa_type']
-            ?? $user->mfaMethods()->where('is_default', true)->value('type')
+        // Validate requested type against enabled methods
+        // If the user requests a type they haven't enabled, ignore the input.
+        $requestedType = isset($data['mfa_type']) && in_array($data['mfa_type'], $enabledMethods)
+            ? $data['mfa_type']
+            : null;
+
+        // Fallback logic:
+        // 1. Use the validated requested type.
+        // 2. Or use the user's default method (using the loaded collection to avoid DB query).
+        // 3. Or use the first available enabled method.
+        $requestedType = $requestedType
+            ?? $user->mfaMethods->firstWhere('is_default', true)?->type
             ?? $enabledMethods[0];
 
         // B. CHALLENGE PHASE (No Code)
         $provider = $this->mfaFactory->make($requestedType);
-        $challengeSent = false;
 
         $challengeSent = $provider->prepareChallenge($user);
 

@@ -23,9 +23,7 @@ class SocialAuthController extends Controller
     {
         $result = $this->service->handleProviderCallback(
             $provider,
-            $request->validated('code'),
-            $request->validated('redirect_uri'),
-            $request->validated('email')
+            $request->validated('redirect_uri')
         );
 
         // --- NEW: MFA Handling (same pattern as AuthController::login) ---

@@ -24,9 +24,8 @@ class SocialLoginRequest extends FormRequest
     {
         return [
             // Validate the provider against the config list
-            'provider' => ['required', 'string', Rule::in(config('services.social_providers'))],
+            'provider' => ['required', 'string', Rule::in(config('services.social_providers', []))],
             'code'    => ['required', 'string'],
-            'email'    => ['nullable', 'email', 'max:255'],
             'redirect_uri' => ['required', 'url'],
         ];
     }
