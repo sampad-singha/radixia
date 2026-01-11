@@ -1,59 +1,128 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Radixia Hybrid Learning Platform
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+![Project Status](https://img.shields.io/badge/Status-Early%20Development-orange)
+![Laravel Version](https://img.shields.io/badge/Laravel-12.x-red)
+![PHP Version](https://img.shields.io/badge/PHP-8.2+-blue)
 
-## About Laravel
+**Radixia** is a hybrid learning platform designed to bridge the gap between self-paced online courses and live coaching. Built for the Bangladeshi market, it unifies live cohort management (Google Meet), recorded content, and local payments (SSLCOMMERZ) into a single, scalable ecosystem.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+> **Note:** This project is currently in the **Foundation Phase**. The core authentication and security architecture is complete, but business domains (Courses, Orders, etc.) are under active development.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 🚀 Features
 
-## Learning Laravel
+### ✅ Completed (Foundation Layer)
+We have established a production-grade secure backend using Domain-Driven Design (DDD).
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+*   **Advanced Authentication**
+    *   Standard Login/Registration with Email Verification.
+    *   **Social Login:** OAuth2 integration with Google and Facebook.
+    *   **Account Linking:** Seamless linking of social accounts to existing profiles.
+*   **Multi-Factor Authentication (MFA)**
+    *   **TOTP:** Time-based OTP (Google Authenticator, Authy).
+    *   **Email MFA:** Secure OTP sent via email.
+    *   **Recovery Codes:** Backup codes for account recovery.
+    *   **Separated Flow:** Decoupled MFA triggers for cleaner UX.
+*   **Security & Session Management**
+    *   **Sudo Mode:** Re-authentication requirement for sensitive actions (e.g., changing 2FA settings).
+    *   **Token Management:** Sanctum-based API tokens with granular abilities/scopes.
+    *   **Session Control:** Ability to revoke specific tokens or logout from all devices.
+*   **Architecture**
+    *   **Domain-Driven Design (DDD):** Strict separation of `Domain`, `Application`, and `Infrastructure` layers.
+    *   **DTO Pattern:** Usage of Data Transfer Objects for strictly typed data flow.
+    *   **Repository Pattern:** Decoupled database access for maintainability.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 🚧 Planned / In Progress
+*   **Program & Course Catalog:** Browsing live cohorts and recorded courses.
+*   **Checkout & Payments:** Integration with SSLCOMMERZ (IPN + Validation).
+*   **Live Class Ops:** Automated Google Meet link generation via Calendar API.
+*   **Secure Video:** Signed URL delivery for course content.
+*   **Certificates:** Auto-generation upon course completion.
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 🛠 Requirements
 
-### Premium Partners
+Ensure your environment meets the following specifications:
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+*   **PHP:** >= 8.2
+*   **Database:** MySQL 8.0+
+*   **Composer:** Latest version
+*   **Extensions:** `bcmath`, `ctype`, `fileinfo`, `json`, `mbstring`, `openssl`, `pdo`, `tokenizer`, `xml`
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## 📦 Installation & Usage Manual
 
-## Code of Conduct
+### 1. Clone & Install
+```bash
+git clone https://github.com/sampad-singha/radixia.git
+cd radixia
+composer install
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 2. Environment Setup
+Copy the example environment file and configure your database credentials.
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-## Security Vulnerabilities
+**Configure the following in `.env`:**
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=radixia
+DB_USERNAME=root
+DB_PASSWORD=
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# Social Login Credentials (Optional for local dev)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+FACEBOOK_CLIENT_ID=
+FACEBOOK_CLIENT_SECRET=
+```
 
-## License
+### 3. Database Migration
+Run the migrations to set up the schema, including the custom `social_accounts` and `mfa_methods` tables.
+```bash
+php artisan migrate --seed
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### 4. Running the Server
+Start the local development server:
+```bash
+php artisan serve
+```
+The API will be available at `http://localhost:8000/api/v1`.
+
+---
+
+## 📚 API Reference (Current)
+
+The following endpoints are fully functional in the `v1` namespace.
+
+### Authentication
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/auth/register` | Create a new account |
+| `POST` | `/auth/login` | Login and receive API token |
+| `POST` | `/auth/logout` | Revoke current token |
+| `POST` | `/auth/social/{provider}` | Redirect to social provider (Google/Facebook) |
+| `POST` | `/auth/social/{provider}/callback` | Handle social callback & token exchange |
+
+### Security & MFA
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/auth/password/confirm` | Enter "Sudo Mode" for sensitive actions |
+| `POST` | `/auth/mfa/enable` | Enable specific MFA method (TOTP/Email) |
+| `POST` | `/auth/mfa/verify` | Verify OTP to finalize MFA setup |
+| `POST` | `/auth/mfa/challenge` | Submit OTP during login challenge |
+
+---
+
+## 📄 License
+
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
