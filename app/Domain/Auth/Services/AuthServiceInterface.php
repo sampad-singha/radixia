@@ -11,7 +11,7 @@ interface AuthServiceInterface
     public function logout(User $user): void;
     public function forgotPassword(array $data, string $client): string;
     public function resetPassword(array $data): string;
-    public function verifyEmail(int $id, string $hash): bool;
+    public function verifyEmail(string $id, string $hash): bool;
     public function resendVerificationNotification(User $user): void;
     public function confirmSudoMode(User $user, string $type, string $value): void;
     public function getSudoStatus(User $user): array;

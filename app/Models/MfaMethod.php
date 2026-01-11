@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MfaMethod extends Model
 {
+    use HasUlids;
     protected $fillable = [
         'user_id', // Don't forget the Foreign Key if creating directly
         'type',

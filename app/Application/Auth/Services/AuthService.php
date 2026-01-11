@@ -60,7 +60,7 @@ readonly class AuthService implements AuthServiceInterface
     /**
      * @throws EmailVerificationException
      */
-    public function verifyEmail(int $id, string $hash): bool
+    public function verifyEmail(string $id, string $hash): bool
     {
         $user = $this->users->findById($id);
 
@@ -198,7 +198,6 @@ readonly class AuthService implements AuthServiceInterface
 
     /**
      * @throws PasswordConfirmationException
-     * @throws InvalidTwoFactorCodeException
      * @throws PasswordNotSetException
      */
     public function confirmSudoMode(User $user, string $type, string $value): void
