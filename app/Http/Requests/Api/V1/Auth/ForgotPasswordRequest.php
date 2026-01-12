@@ -15,13 +15,6 @@ class ForgotPasswordRequest extends FormRequest
         return true;
     }
 
-    protected function prepareForValidation(): void
-    {
-        $this->merge([
-            'client_type' => $this->header('X-Client'),
-        ]);
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *
@@ -31,7 +24,6 @@ class ForgotPasswordRequest extends FormRequest
     {
         return [
             'email' => ['required', 'string', 'email'],
-            'client_type' => ['required', 'string', 'in:web,mobile,admin'],
         ];
     }
 }

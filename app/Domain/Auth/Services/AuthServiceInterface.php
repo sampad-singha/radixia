@@ -9,7 +9,7 @@ interface AuthServiceInterface
     public function register(array $data, ?string $ip, ?string $userAgent): array;
     public function login(array $data,  ?string $ip, ?string $userAgent): array;
     public function logout(User $user): void;
-    public function forgotPassword(array $data, string $client): string;
+    public function forgotPassword(array $data, ?string $origin): string;
     public function resetPassword(array $data): string;
     public function verifyEmail(string $id, string $hash): bool;
     public function resendVerificationNotification(User $user): void;

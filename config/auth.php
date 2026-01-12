@@ -112,10 +112,10 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
-    'reset_clients' => [
-        'web' => env('RESET_CLIENT_WEB', 'http://localhost:3000/reset-password'),
-        'admin' => env('RESET_CLIENT_ADMIN', 'http://localhost:3001/reset-password'),
-        'mobile' => env('RESET_CLIENT_MOBILE', 'myapp://reset-password'),
+    'allowed_origins' => [
+        'http://localhost:3000',
+        'https://app.radixia.com',
+        'https://admin.radixia.com',
     ],
 
     'email_change_timeout' => env('AUTH_EMAIL_CHANGE_TIMEOUT', 60),

@@ -22,6 +22,9 @@ use App\Infrastructure\Auth\Repositories\SocialAccountRepository;
 use App\Infrastructure\Auth\Repositories\TwoFactorRepository;
 use App\Infrastructure\Users\Repositories\UserProfileRepository;
 use App\Infrastructure\Users\Repositories\UserRepository;
+use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -52,6 +55,28 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Override how the verification URL is generated
+        VerifyEmail::createUrlUsing(function (object $notifiable) {
+
+            // 1. Capture the Origin from the Registration/Resend request
+            $origin = request()->header('Origin');
+            $allowedOrigins = config('auth.allowed_origins', []);
+
+            // 2. Validate Origin (Fallback to default if missing or unauthorized)
+            $clientUrl = ($origin && in_array($origin, $allowedOrigins))
+                ? $origin
+                : config('app.frontend_url');
+
+            // 3. Generate Signed URL with 'client_url' embedded
+            return URL::temporarySignedRoute(
+                'verification.verify',
+                Carbon::now()->addMinutes(60),
+                [
+                    'id' => $notifiable->getKey(),
+                    'hash' => sha1($notifiable->getEmailForVerification()),
+                    'client_url' => $clientUrl, // <--- This is now signed and safe
+                ]
+            );
+        });
     }
 }
