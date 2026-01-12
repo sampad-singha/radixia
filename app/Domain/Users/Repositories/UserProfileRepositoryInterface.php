@@ -7,6 +7,6 @@ use App\Models\User;
 
 interface UserProfileRepositoryInterface
 {
-    public function findByUser(User $user): ?UserProfile;
+    public function findByUser(User $user): UserProfile;
     public function updateOrCreate(User $user, array $data): UserProfile;
 }

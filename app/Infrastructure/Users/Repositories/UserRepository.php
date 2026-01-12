@@ -30,7 +30,7 @@ class UserRepository implements UserRepositoryInterface
                 'password' => $data['password'],
             ]);
 
-            $avatarUrl = 'https://api.dicebear.com/9.x/shapes/svg?seed=' . urlencode($data['name']); // http://ui-avatars.com/api/?name=John+Doe&color=7F9CF5&color=random
+            $avatarUrl = 'https://api.dicebear.com/9.x/shapes/svg?seed=' . urlencode($data['name']);
 
             UserProfile::create([
                 'user_id' => $user->id,

@@ -13,9 +13,10 @@ readonly class UserProfileService implements UserProfileServiceInterface
         private UserProfileRepositoryInterface $repository
     ) {}
 
-    public function getProfile(User $user): ?UserProfile
+
+    public function getProfile(User $user): UserProfile
     {
-        return $this->repository->findByUser($user);
+        return UserProfile::where('user_id', $user->id)->firstOrFail();
     }
 
     public function updateProfile(User $user, array $data): UserProfile

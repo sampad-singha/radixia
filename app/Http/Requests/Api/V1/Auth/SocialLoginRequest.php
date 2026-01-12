@@ -26,7 +26,6 @@ class SocialLoginRequest extends FormRequest
             // Validate the provider against the config list
             'provider' => ['required', 'string', Rule::in(config('services.social_providers', []))],
             'code'    => ['required', 'string'],
-//            'redirect_uri' => ['required', 'url'],
         ];
     }
 }
