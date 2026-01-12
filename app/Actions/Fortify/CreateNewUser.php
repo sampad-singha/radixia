@@ -22,12 +22,14 @@ class CreateNewUser implements CreatesNewUsers
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)],
             'password' => $this->passwordRules(),
+            'marketing_opt_in' => ['sometimes', 'boolean'],
         ])->validate();
 
         return $this->users->create([
             'name' => $input['name'],
             'email' => $input['email'],
             'password' => $input['password'],
+            'marketing_opt_in' => $input['marketing_opt_in'] ?? false,
         ]);
     }
 }

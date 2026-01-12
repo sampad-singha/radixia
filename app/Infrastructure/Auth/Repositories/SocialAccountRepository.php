@@ -2,8 +2,9 @@
 
 namespace App\Infrastructure\Auth\Repositories;
 
+use App\Domain\Auth\Entities\SocialAccount;
 use App\Domain\Auth\Repositories\SocialAccountRepositoryInterface;
-use App\Models\SocialAccount;
+use App\Domain\Users\Entities\UserProfile;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -76,6 +77,17 @@ class SocialAccountRepository implements SocialAccountRepositoryInterface
                 $providerUser->expiresIn,
                 $providerUser->getAvatar()
             );
+
+            // 3. Create User Profile with sensible defaults
+            UserProfile::create([
+                'user_id' => $user->id,
+                'avatar_url' => $providerUser->getAvatar(),
+                'locale' => isset($providerUser->user['locale'])
+                    ? substr($providerUser->user['locale'], 0, 2)
+                    : 'en',
+                'marketing_opt_in' => false,
+                'timezone' => null,
+            ]);
 
             return $user;
         });

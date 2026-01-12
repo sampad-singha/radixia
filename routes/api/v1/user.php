@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\User\EmailChangeController;
+use App\Http\Controllers\Api\V1\User\UserProfileController;
 use Illuminate\Support\Facades\Route;
 
 // All routes here are scoped to 'v1/user' and require 'auth:sanctum'
@@ -11,7 +12,7 @@ Route::prefix('user')->middleware(['auth:sanctum', 'ability:access-api'])->group
     // Profile Management
     // ---------------------------------------------------------------------
     // Rate limit profile updates to prevent database spam
-    Route::put('/profile-information', [AuthController::class, 'updateProfile'])
+    Route::put('/account', [AuthController::class, 'updateAccount'])
         ->middleware('throttle:6,1');
 
     // ---------------------------------------------------------------------
@@ -28,6 +29,11 @@ Route::prefix('user')->middleware(['auth:sanctum', 'ability:access-api'])->group
         Route::post('/verify', [EmailChangeController::class, 'verify'])
             ->middleware('throttle:5,1')
             ->name('user.email.verify');
+    });
+
+    Route::prefix('profile')->group(function () {
+        Route::get('/', [UserProfileController::class, 'show']);
+        Route::put('/', [UserProfileController::class, 'update']);
     });
 
     // ---------------------------------------------------------------------

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1\Auth;
+namespace App\Http\Controllers\Api\V1\Mfa;
 
 use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
 use App\Domain\Auth\Repositories\AccessTokenRepositoryInterface;
@@ -10,7 +10,7 @@ use App\Http\Requests\Api\V1\Auth\ConfirmTwoFactorRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class TwoFactorController extends Controller
+class MultiFactorController extends Controller
 {
     public function __construct(
         private readonly MfaServiceInterface $mfaService,

@@ -2,7 +2,7 @@
 
 namespace App\Domain\Auth\Repositories;
 
-use App\Models\SocialAccount;
+use App\Domain\Auth\Entities\SocialAccount;
 use App\Models\User;
 
 interface SocialAccountRepositoryInterface

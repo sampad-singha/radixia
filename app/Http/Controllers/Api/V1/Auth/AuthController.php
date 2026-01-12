@@ -115,10 +115,10 @@ class AuthController extends Controller
         return response()->json(['data' => ['user' => $request->user()]]);
     }
 
-    public function updateProfile(Request $request, UpdateUserProfileInformation $updater): JsonResponse
+    public function updateAccount(Request $request, UpdateUserProfileInformation $updater): JsonResponse
     {
         $updater->update($request->user(), $request->all());
-        return response()->json(['message' => 'Profile updated successfully.']);
+        return response()->json(['message' => 'Account information updated successfully.']);
     }
 
     public function confirmSudo(ConfirmSudoRequest $request): JsonResponse
