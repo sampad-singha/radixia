@@ -25,7 +25,7 @@
 
         // 2. Send code to your Backend API
         try {
-            const response = await fetch('http://127.0.0.1:8000/api/v1/auth/social/google/callback', {
+            const response = await fetch('http://127.0.0.1:8000/api/v1/auth/social/google/callback_', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

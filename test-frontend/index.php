@@ -34,7 +34,7 @@
 <script>
     // --- GOOGLE LOGIN LOGIC ---
     function loginGoogle() {
-        const clientId = 'YOUR_GOOGLE_CLIENT_ID_HERE';
+        const clientId = '812220947594-i4pjre89g91ngir59dqflrk5c5o71u0s.apps.googleusercontent.com';
         const redirectUri = 'http://localhost:3000/auth/google/callback';
         const scope = 'openid profile email';
 

@@ -13,6 +13,8 @@ use App\Domain\Auth\Repositories\TwoFactorRepositoryInterface;
 use App\Domain\Auth\Services\AuthServiceInterface;
 use App\Domain\Auth\Services\EmailChangeServiceInterface;
 use App\Domain\Auth\Services\SocialAuthServiceInterface;
+use App\Domain\Instructors\Repositories\InstructorProfileRepositoryInterface;
+use App\Domain\Instructors\Services\InstructorProfileServiceInterface;
 use App\Domain\Mfa\Services\MfaServiceInterface;
 use App\Domain\Users\Repositories\UserProfileRepositoryInterface;
 use App\Domain\Users\Repositories\UserRepositoryInterface;
@@ -20,6 +22,8 @@ use App\Domain\Users\Services\UserProfileServiceInterface;
 use App\Infrastructure\Auth\Repositories\SanctumAccessTokenRepository;
 use App\Infrastructure\Auth\Repositories\SocialAccountRepository;
 use App\Infrastructure\Auth\Repositories\TwoFactorRepository;
+use App\Infrastructure\Instructors\Repositories\InstructorProfileRepository;
+use App\Infrastructure\Instructors\Services\InstructorProfileService;
 use App\Infrastructure\Users\Repositories\UserProfileRepository;
 use App\Infrastructure\Users\Repositories\UserRepository;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -34,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // User & Authentication Bindings
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
         $this->app->bind(AuthServiceInterface::class, AuthService::class);
         $this->app->bind(AccessTokenRepositoryInterface::class, SanctumAccessTokenRepository::class);
@@ -42,12 +47,15 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(SocialAccountRepositoryInterface::class, SocialAccountRepository::class);
         $this->app->bind(SocialAuthServiceInterface::class, SocialAuthService::class);
         $this->app->bind(MfaServiceInterface::class, MfaService::class);
-        $this->app->bind(UserProfileRepositoryInterface::class, UserProfileRepository::class);
 
-        $this->app->bind(
-            UserProfileServiceInterface::class,
-            UserProfileService::class
-        );
+        // User Profile Bindings
+        $this->app->bind(UserProfileRepositoryInterface::class, UserProfileRepository::class);
+        $this->app->bind(UserProfileServiceInterface::class, UserProfileService::class);
+
+        // Instructor Profile Bindings
+        $this->app->bind(InstructorProfileRepositoryInterface::class, InstructorProfileRepository::class);
+        $this->app->bind(InstructorProfileServiceInterface::class, InstructorProfileService::class);
+
     }
 
     /**

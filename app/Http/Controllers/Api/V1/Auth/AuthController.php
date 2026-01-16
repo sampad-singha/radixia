@@ -44,6 +44,11 @@ class AuthController extends Controller
 
         $frontendUrl = $request->query('client_url', config('app.frontend_url'));
 
+        $allowed = config('auth.allowed_origins', []);
+        if (! in_array($frontendUrl, $allowed, true)) {
+            $frontendUrl = config('app.frontend_url');
+        }
+
         return redirect()->to($frontendUrl . '/email-verified?verified=1');
     }
 
