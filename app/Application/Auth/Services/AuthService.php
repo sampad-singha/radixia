@@ -60,7 +60,7 @@ readonly class AuthService implements AuthServiceInterface
     /**
      * @throws EmailVerificationException
      */
-    public function verifyEmail(int $id, string $hash): bool
+    public function verifyEmail(string $id, string $hash): bool
     {
         $user = $this->users->findById($id);
 
@@ -144,29 +144,29 @@ readonly class AuthService implements AuthServiceInterface
     /**
      * @throws InvalidResetClientException
      */
-    public function forgotPassword(array $data, string $client): string
+    public function forgotPassword(array $data, ?string $origin): string
     {
-        $resetUrlBase = config("auth.reset_clients.$client");
+        $allowedOrigins = config('auth.allowed_origins', []);
 
-        if (!$resetUrlBase) {
-            throw new InvalidResetClientException('Invalid password reset client.');
-        }
+        // If origin is valid, use it. Otherwise, fallback to default frontend URL.
+        $baseUrl = ($origin && in_array($origin, $allowedOrigins))
+            ? $origin
+            : config('app.frontend_url');
 
-        // 1. Get the user
+        // 2. Get the user
         $user = $this->users->findByEmail($data['email']);
 
         if (!$user) {
-            // Return success to prevent email enumeration, or throw based on your policy
             return Password::RESET_LINK_SENT;
         }
 
-        // 2. Generate Token Manually
+        // 3. Generate Token
         $token = Password::broker()->createToken($user);
 
-        // 3. Build the specific URL for this request
-        $url = $resetUrlBase . '?token=' . urlencode($token) . '&email=' . urlencode($user->email);
+        // 4. Build URL (Assume '/reset-password' path is standard for all frontends)
+        $url = $baseUrl . '/reset-password?token=' . urlencode($token) . '&email=' . urlencode($user->email);
 
-        // 4. Send Notification explicitly
+        // 5. Send Notification
         $user->notify(new ResetPasswordNotification($url));
 
         return Password::RESET_LINK_SENT;
@@ -198,7 +198,6 @@ readonly class AuthService implements AuthServiceInterface
 
     /**
      * @throws PasswordConfirmationException
-     * @throws InvalidTwoFactorCodeException
      * @throws PasswordNotSetException
      */
     public function confirmSudoMode(User $user, string $type, string $value): void

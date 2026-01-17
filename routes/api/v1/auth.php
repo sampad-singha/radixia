@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\AuthSessionController;
 use App\Http\Controllers\Api\V1\Auth\SocialAuthController;
-use App\Http\Controllers\Api\V1\Auth\TwoFactorController;
+use App\Http\Controllers\Api\V1\Mfa\MultiFactorController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -58,9 +58,9 @@ Route::prefix('auth')->group(function () {
 
     // Multi-Factor Authentication during Login
     Route::middleware(['auth:sanctum', 'ability:mfa:verify'])->group(function () {
-        Route::post('/verify-login', [TwoFactorController::class, 'verifyLogin']);
+        Route::post('/verify-login', [MultiFactorController::class, 'verifyLogin']);
 
-        Route::post('challenge', [TwoFactorController::class, 'challenge']);
+        Route::post('challenge', [MultiFactorController::class, 'challenge']);
     });
 
     // ---------------------------------------------------------------------
@@ -72,14 +72,14 @@ Route::prefix('auth')->group(function () {
         ->group(function () {
 
             // Enable/Confirm: Strict throttling to prevent code guessing
-            Route::post('/enable', [TwoFactorController::class, 'enable']);
-            Route::post('/confirm', [TwoFactorController::class, 'confirm'])
+            Route::post('/enable', [MultiFactorController::class, 'enable']);
+            Route::post('/confirm', [MultiFactorController::class, 'confirm'])
                 ->middleware('throttle:5,1');
 
-            Route::delete('/', [TwoFactorController::class, 'disable'])
+            Route::delete('/', [MultiFactorController::class, 'disable'])
                 ->middleware(['sudo']);
-            Route::get('/recovery-codes', [TwoFactorController::class, 'recoveryCodes']);
-            Route::post('/recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])
+            Route::get('/recovery-codes', [MultiFactorController::class, 'recoveryCodes']);
+            Route::post('/recovery-codes', [MultiFactorController::class, 'regenerateRecoveryCodes'])
                 ->middleware('throttle:5,1');
         });
 

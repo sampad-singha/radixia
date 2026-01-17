@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\Users\Repositories;
 
+use App\Domain\Users\Entities\UserProfile;
 use App\Domain\Users\Repositories\UserRepositoryInterface;
 use App\Models\User;
 use DateTimeInterface;
@@ -17,12 +18,33 @@ class UserRepository implements UserRepositoryInterface
             ->first();
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function create(array $data): User
     {
-        return User::query()->create($data);
+        return DB::transaction(function () use ($data) {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+            ]);
+
+            $avatarUrl = 'https://api.dicebear.com/9.x/shapes/svg?seed=' . urlencode($data['name']);
+
+            UserProfile::create([
+                'user_id' => $user->id,
+                'avatar_url' => $avatarUrl,
+                'marketing_opt_in' => $data['marketing_opt_in'] ?? false,
+                'locale' => 'en',
+                'timezone' => null, // Let frontend detect later
+            ]);
+
+            return $user;
+        });
     }
 
-    public function findById(int $id): ?User
+    public function findById(string $id): ?User
     {
         return User::find($id);
     }

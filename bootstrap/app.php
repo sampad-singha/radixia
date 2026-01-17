@@ -16,6 +16,8 @@ use App\Domain\Auth\Exceptions\SocialEmailRequiredException;
 use App\Domain\Auth\Exceptions\TwoFactorNotConfirmedException;
 use App\Domain\Auth\Exceptions\TwoFactorNotEnabledException;
 use App\Domain\Auth\Exceptions\TwoFactorRequiredException;
+use App\Domain\Instructors\Exceptions\InstructorProfileAlreadyExistsException;
+use App\Domain\Instructors\Exceptions\InstructorProfileNotFoundException;
 use App\Domain\Users\Exceptions\InvalidEmailChangeTokenException;
 use App\Http\Middleware\EnsureEmailIsVerifiedApi;
 use App\Http\Middleware\EnsureSudoMode;
@@ -220,6 +222,22 @@ return Application::configure(basePath: dirname(__DIR__))
                 'message' => $e->getMessage(),
                 'code' => 'PASSWORD_NOT_SET',
             ], 400);
+        });
+
+        $exceptions->render(function (InstructorProfileNotFoundException $e, Request $request) {
+            return response()->json([
+                'message' => 'Instructor profile not found.',
+                'code' => 'INSTRUCTOR_PROFILE_NOT_FOUND',
+                'error' => $e->getMessage()
+            ], 404);
+        });
+
+        $exceptions->render(function (InstructorProfileAlreadyExistsException $e, Request $request) {
+            return response()->json([
+                'message' => 'Instructor profile already exists.',
+                'code' => 'INSTRUCTOR_PROFILE_ALREADY_EXISTS',
+                'error' => $e->getMessage()
+            ], 409);
         });
 
     })->create();

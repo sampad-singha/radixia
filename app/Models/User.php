@@ -2,21 +2,24 @@
 
 namespace App\Models;
 
+use App\Domain\Auth\Entities\SocialAccount;
+use App\Domain\Mfa\Entities\MfaMethod;
+use App\Domain\Users\Entities\UserProfile;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
-use App\Models\SocialAccount;
-use App\Models\MfaMethod;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable, HasApiTokens, TwoFactorAuthenticatable, HasUuids;
 
     /**
      * The attributes that are mass assignable.
@@ -69,6 +72,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function mfaMethods(): HasMany
     {
         return $this->hasMany(MfaMethod::class);
+    }
+
+    public function profile(): HasOne
+    {
+        return $this->hasOne(UserProfile::class);
     }
 
 }

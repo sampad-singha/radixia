@@ -21,9 +21,19 @@ class SocialAuthController extends Controller
      */
     public function callback(SocialLoginRequest $request, string $provider): JsonResponse
     {
+        // 1. Determine the base Frontend URL from the Origin header
+        $origin = $request->header('Origin');
+        $allowedOrigins = config('auth.allowed_origins', []);
+        $baseUrl = ($origin && in_array($origin, $allowedOrigins))
+            ? $origin
+            : config('app.frontend_url');
+
+        // 2. Construct the exact Redirect URI expected by the Provider
+        $redirectUrl = "{$baseUrl}/auth/{$provider}/callback";
+
         $result = $this->service->handleProviderCallback(
             $provider,
-            $request->validated('redirect_uri')
+            $redirectUrl
         );
 
         // --- NEW: MFA Handling (same pattern as AuthController::login) ---
