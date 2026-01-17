@@ -8,9 +8,9 @@ use App\Models\User;
 
 class UserProfileRepository implements UserProfileRepositoryInterface
 {
-    public function findByUser(User $user): ?UserProfile
+    public function findByUser(User $user): UserProfile
     {
-        return UserProfile::where('user_id', $user->id)->first();
+        return UserProfile::where('user_id', $user->id)->firstOrFail();
     }
 
 
