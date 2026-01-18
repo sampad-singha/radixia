@@ -45,6 +45,7 @@ jobs:
           docker compose run --rm \
           -e XDEBUG_MODE=coverage \
           app sh -c "
+            git config --global --add safe.directory /var/www/html &&
             composer install --no-interaction --prefer-dist && 
             cp .env.docker .env && 
             php artisan key:generate && 
