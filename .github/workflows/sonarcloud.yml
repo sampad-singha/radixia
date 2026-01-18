@@ -4,7 +4,6 @@ on:
   push:
     branches: [ "main", "dev" ]
   pull_request:
-  
   workflow_dispatch:
 
 permissions:
@@ -15,28 +14,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repository (REQUIRED)
+      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2. Setup PHP (required for Laravel context)
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          extensions: mbstring, intl, pdo, mysql
-          coverage: none
+      # 2. Build and Run Tests inside Docker
+      # We use 'run --rm' to start the containers, execute the test, and cleanup.
+      # This overrides the 'command' in your compose.yaml so we have full control here.
+      - name: Run Tests with Coverage
+        run: |
+          docker compose run --rm \
+          -e XDEBUG_MODE=coverage \
+          app sh -c "
+            cp .env.example .env && 
+            php artisan key:generate && 
+            composer install --no-interaction && 
+            php artisan migrate --force && 
+            php artisan test --coverage-clover=coverage.xml
+          "
 
-      # 3. Install dependencies (no dev execution, safe for CI)
-      - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
+      # 3. Fix Coverage Paths
+      # Docker generates paths like '/var/www/html/app/...'.
+      # SonarCloud expects 'app/...'. We strip the prefix.
+      - name: Fix Coverage Paths
+        run: sed -i 's|/var/www/html/||g' coverage.xml
 
-      # 4. SonarCloud scan
+      # 4. SonarCloud Scan
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
@@ -44,5 +53,6 @@ jobs:
             -Dsonar.organization=sampad-singha
             -Dsonar.sources=app,routes,resources
             -Dsonar.tests=tests
-            -Dsonar.exclusions=vendor/**,node_modules/**,storage/**,bootstrap/cache/**,test-frontend/*,resources/css,resources/js
+            -Dsonar.php.coverage.reportPaths=coverage.xml
+            -Dsonar.exclusions=vendor/**,node_modules/**,storage/**,bootstrap/cache/**,resources/css/**,resources/js/**
             -Dsonar.sourceEncoding=UTF-8
