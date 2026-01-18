@@ -21,23 +21,25 @@ jobs:
           fetch-depth: 0
 
       # 2. Build and Run Tests inside Docker
-      # We use 'run --rm' to start the containers, execute the test, and cleanup.
-      # This overrides the 'command' in your compose.yaml so we have full control here.
       - name: Run Tests with Coverage
         run: |
+          # A. Start MySQL and wait for it to be healthy
+          # 'wait' flag ensures we don't proceed until the healthcheck passes
+          docker compose up -d --wait mysql
+
+          # B. Run the App container to test
+          # 'composer install' is REQUIRED here because the volume mount wipes vendor
           docker compose run --rm \
           -e XDEBUG_MODE=coverage \
           app sh -c "
             cp .env.example .env && 
             php artisan key:generate && 
-            composer install --no-interaction && 
+            composer install --no-interaction --prefer-dist && 
             php artisan migrate --force && 
             php artisan test --coverage-clover=coverage.xml
           "
 
       # 3. Fix Coverage Paths
-      # Docker generates paths like '/var/www/html/app/...'.
-      # SonarCloud expects 'app/...'. We strip the prefix.
       - name: Fix Coverage Paths
         run: sed -i 's|/var/www/html/||g' coverage.xml
 
