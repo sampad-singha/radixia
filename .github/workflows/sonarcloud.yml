@@ -13,10 +13,7 @@ jobs:
   sonarcloud:
     runs-on: ubuntu-latest
 
-    # ------------------------------------------------------------------
-    # CHANGE IS HERE: Define these GLOBALLY so Docker-Compose sees them 
-    # when starting the Database, NOT just when running the App.
-    # ------------------------------------------------------------------
+    # Global Env ensures Database Service sees these credentials on startup
     env:
       DB_CONNECTION: mysql
       DB_HOST: mysql
@@ -25,7 +22,6 @@ jobs:
       DB_USERNAME: sail
       DB_PASSWORD: password
       APP_ENV: testing
-      # SonarCloud Secrets
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
@@ -37,15 +33,16 @@ jobs:
 
       - name: Run Tests with Coverage
         run: |
-          # Now when this runs, it sees 'DB_USERNAME=sail' from the global env
-          # and actually CREATES the 'sail' user inside MySQL.
+          # Start MySQL and wait for it to be ready
           docker compose up -d --wait mysql
 
-          # We don't need to repeat the -e flags here anymore
-          docker compose run --rm \
+          # Run the test container
+          # --build: Forces Docker to use your updated Dockerfile (with PCOV)
+          # --rm: Cleans up the container after running
+          docker compose run --rm --build \
           -e XDEBUG_MODE=coverage \
           app sh -c "
-            git config --global --add safe.directory /var/www/html &&
+            git config --global --add safe.directory /var/www/html && 
             composer install --no-interaction --prefer-dist && 
             cp .env.docker .env && 
             php artisan key:generate && 
@@ -54,6 +51,7 @@ jobs:
           "
 
       - name: Fix Coverage Paths
+        # Removes the Docker path so SonarCloud can find the files in the repo
         run: sed -i 's|/var/www/html/||g' coverage.xml
 
       - name: SonarCloud Scan
