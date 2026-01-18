@@ -32,9 +32,9 @@ jobs:
           docker compose run --rm \
           -e XDEBUG_MODE=coverage \
           app sh -c "
+            composer install --no-interaction --prefer-dist && 
             cp .env.example .env && 
             php artisan key:generate && 
-            composer install --no-interaction --prefer-dist && 
             php artisan migrate --force && 
             php artisan test --coverage-clover=coverage.xml
           "
