@@ -1,0 +1,60 @@
+name: SonarCloud Analysis
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  pull-requests: read
+
+jobs:
+  sonarcloud:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. Build and Run Tests inside Docker
+      - name: Run Tests with Coverage
+        run: |
+          # A. Start MySQL and wait for it to be healthy
+          # 'wait' flag ensures we don't proceed until the healthcheck passes
+          docker compose up -d --wait mysql
+
+          # B. Run the App container to test
+          # 'composer install' is REQUIRED here because the volume mount wipes vendor
+          docker compose run --rm \
+          -e XDEBUG_MODE=coverage \
+          app sh -c "
+            composer install --no-interaction --prefer-dist && 
+            cp .env.example .env && 
+            php artisan key:generate && 
+            php artisan migrate --force && 
+            php artisan test --coverage-clover=coverage.xml
+          "
+
+      # 3. Fix Coverage Paths
+      - name: Fix Coverage Paths
+        run: sed -i 's|/var/www/html/||g' coverage.xml
+
+      # 4. SonarCloud Scan
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=sampad-singha_radixia
+            -Dsonar.organization=sampad-singha
+            -Dsonar.sources=app,routes,resources
+            -Dsonar.tests=tests
+            -Dsonar.php.coverage.reportPaths=coverage.xml
+            -Dsonar.exclusions=vendor/**,node_modules/**,storage/**,bootstrap/cache/**,resources/css/**,resources/js/**
+            -Dsonar.sourceEncoding=UTF-8
