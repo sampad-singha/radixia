@@ -65,7 +65,7 @@ readonly class AuthService implements AuthServiceInterface
         $user = $this->users->findById($id);
 
         $emailForVerification = $user ? $user->getEmailForVerification() : 'email_verification_dummy_value';
-        $expectedHash = sha1($emailForVerification);
+        $expectedHash = hash('sha256', $emailForVerification);
 
         if (!$user || !hash_equals($expectedHash, (string)$hash)) {
             throw new EmailVerificationException();
