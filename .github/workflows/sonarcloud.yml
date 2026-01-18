@@ -44,5 +44,5 @@ jobs:
             -Dsonar.organization=sampad-singha
             -Dsonar.sources=app,routes,resources
             -Dsonar.tests=tests
-            -Dsonar.exclusions=vendor/**,node_modules/**,storage/**,bootstrap/cache/**,test-frontend/*
+            -Dsonar.exclusions=vendor/**,node_modules/**,storage/**,bootstrap/cache/**,test-frontend/*,resources/css,resources/js
             -Dsonar.sourceEncoding=UTF-8
