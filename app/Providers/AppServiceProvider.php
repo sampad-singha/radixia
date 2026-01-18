@@ -81,7 +81,7 @@ class AppServiceProvider extends ServiceProvider
                 Carbon::now()->addMinutes(60),
                 [
                     'id' => $notifiable->getKey(),
-                    'hash' => sha1($notifiable->getEmailForVerification()),
+                    'hash' => hash('sha256', $notifiable->getEmailForVerification()),
                     'client_url' => $clientUrl, // <--- This is now signed and safe
                 ]
             );

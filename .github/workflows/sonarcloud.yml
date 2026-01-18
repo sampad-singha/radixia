@@ -1,0 +1,67 @@
+name: SonarCloud Analysis
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  pull-requests: read
+
+jobs:
+  sonarcloud:
+    runs-on: ubuntu-latest
+
+    # Global Env ensures Database Service sees these credentials on startup
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: radixia
+      DB_USERNAME: sail
+      DB_PASSWORD: password
+      APP_ENV: testing
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Tests with Coverage
+        run: |
+          # Start MySQL and wait for it to be ready
+          docker compose up -d --wait mysql
+
+          # Run the test container
+          # --build: Forces Docker to use your updated Dockerfile (with PCOV)
+          # --rm: Cleans up the container after running
+          docker compose run --rm --build \
+          -e XDEBUG_MODE=coverage \
+          app sh -c "
+            git config --global --add safe.directory /var/www/html && 
+            composer install --no-interaction --prefer-dist && 
+            cp .env.docker .env && 
+            php artisan key:generate && 
+            php artisan migrate --force && 
+            php artisan test --coverage-clover=coverage.xml
+          "
+
+      - name: Fix Coverage Paths
+        # Removes the Docker path so SonarCloud can find the files in the repo
+        run: sed -i 's|/var/www/html/||g' coverage.xml
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        with:
+          args: >
+            -Dsonar.projectKey=sampad-singha_radixia
+            -Dsonar.organization=sampad-singha
+            -Dsonar.sources=app,routes,resources
+            -Dsonar.tests=tests
+            -Dsonar.php.coverage.reportPaths=coverage.xml
+            -Dsonar.exclusions=vendor/**,node_modules/**,storage/**,bootstrap/cache/**,resources/css/**,resources/js/**
+            -Dsonar.sourceEncoding=UTF-8
