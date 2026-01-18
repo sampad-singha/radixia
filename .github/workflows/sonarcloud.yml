@@ -33,7 +33,7 @@ jobs:
           -e XDEBUG_MODE=coverage \
           app sh -c "
             composer install --no-interaction --prefer-dist && 
-            cp .env.example .env && 
+            cp .env.docker .env && 
             php artisan key:generate && 
             php artisan migrate --force && 
             php artisan test --coverage-clover=coverage.xml
