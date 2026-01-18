@@ -13,42 +13,51 @@ jobs:
   sonarcloud:
     runs-on: ubuntu-latest
 
+    # ------------------------------------------------------------------
+    # CHANGE IS HERE: Define these GLOBALLY so Docker-Compose sees them 
+    # when starting the Database, NOT just when running the App.
+    # ------------------------------------------------------------------
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: radixia
+      DB_USERNAME: sail
+      DB_PASSWORD: password
+      APP_ENV: testing
+      # SonarCloud Secrets
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
     steps:
-      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2. Build and Run Tests inside Docker
       - name: Run Tests with Coverage
         run: |
-          # A. Start MySQL and wait for it to be healthy
-          # 'wait' flag ensures we don't proceed until the healthcheck passes
+          # Now when this runs, it sees 'DB_USERNAME=sail' from the global env
+          # and actually CREATES the 'sail' user inside MySQL.
           docker compose up -d --wait mysql
 
-          # B. Run the App container to test
-          # 'composer install' is REQUIRED here because the volume mount wipes vendor
+          # We don't need to repeat the -e flags here anymore
           docker compose run --rm \
           -e XDEBUG_MODE=coverage \
           app sh -c "
+            git config --global --add safe.directory /var/www/html &&
             composer install --no-interaction --prefer-dist && 
-            cp .env.example .env && 
+            cp .env.docker .env && 
             php artisan key:generate && 
             php artisan migrate --force && 
             php artisan test --coverage-clover=coverage.xml
           "
 
-      # 3. Fix Coverage Paths
       - name: Fix Coverage Paths
         run: sed -i 's|/var/www/html/||g' coverage.xml
 
-      # 4. SonarCloud Scan
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
             -Dsonar.projectKey=sampad-singha_radixia
