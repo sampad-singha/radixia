@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Domain\Auth\Entities\SocialAccount;
 use App\Domain\Mfa\Entities\MfaMethod;
 use App\Domain\Users\Entities\UserProfile;
+use App\Notifications\VerifyEmailQueued;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -77,6 +78,15 @@ class User extends Authenticatable implements MustVerifyEmail
     public function profile(): HasOne
     {
         return $this->hasOne(UserProfile::class);
+    }
+
+    /**
+     * Override the default email verification notification
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        // Use your new queued notification
+        $this->notify(new VerifyEmailQueued);
     }
 
 }
