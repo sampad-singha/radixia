@@ -42,7 +42,7 @@ readonly class EmailChangeService implements EmailChangeServiceInterface
 
     public function verifyChange(User $user, string $code): void
     {
-        $dummyHash = '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
+        $dummyHash = Hash::make('dummy_secret');
         $targetHash = $user->pending_email_token ?? $dummyHash;
         $isValidToken = Hash::check($code, $targetHash);
         $isExpired = $user->pending_email_expires_at && $user->pending_email_expires_at->isPast();

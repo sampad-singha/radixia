@@ -18,6 +18,7 @@ use App\Domain\Auth\Exceptions\TwoFactorNotEnabledException;
 use App\Domain\Auth\Exceptions\TwoFactorRequiredException;
 use App\Domain\Instructors\Exceptions\InstructorProfileAlreadyExistsException;
 use App\Domain\Instructors\Exceptions\InstructorProfileNotFoundException;
+use App\Domain\Mfa\Exceptions\InvalidTotpCodeException;
 use App\Domain\Users\Exceptions\InvalidEmailChangeTokenException;
 use App\Http\Middleware\EnsureEmailIsVerifiedApi;
 use App\Http\Middleware\EnsureSudoMode;
@@ -238,6 +239,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 'code' => 'INSTRUCTOR_PROFILE_ALREADY_EXISTS',
                 'error' => $e->getMessage()
             ], 409);
+        });
+
+        $exceptions->render(function (InvalidTotpCodeException $e, Request $request) {
+            return response()->json([
+                'message' => 'The provided two-factor authentication code is invalid.',
+                'code' => 'INVALID_TOTP_CODE',
+                'error' => $e->getMessage()
+            ], 422);
         });
 
     })->create();

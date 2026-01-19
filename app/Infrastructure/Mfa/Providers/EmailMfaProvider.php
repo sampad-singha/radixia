@@ -58,35 +58,29 @@ class EmailMfaProvider implements MfaProviderInterface
     {
         $method = $user->mfaMethods()->where('type', 'email')->first();
 
-        // Check if data exists
+        // 1. Fail early if basic data is missing
         if (! $method || empty($method->secret)) {
             return false;
         }
 
-        // Access directly.
-        // Model cast 'encrypted:array' has already decrypted and decoded this into an array.
-        $data = $method->secret; // <--- CHANGED: No decrypt(), no json_decode()
-
+        $data = $method->secret;
         $targetHash = $data['hash'] ?? '';
         $expiresAtString = $data['expires_at'] ?? null;
 
+        // 2. Fail early if payload is invalid
         if (! $targetHash || ! $expiresAtString) {
             return false;
         }
 
+        // 3. Perform final validation
         $expiresAt = Carbon::parse($expiresAtString);
+        $isValid = ! $expiresAt->isPast() && Hash::check($code, $targetHash);
 
-        if ($expiresAt->isPast()) {
-            return false;
-        }
-
-        if (Hash::check($code, $targetHash)) {
-            // Clear secret (pass null)
+        if ($isValid) {
             $method->update(['secret' => null]);
-            return true;
         }
 
-        return false;
+        return $isValid;
     }
 
     public function enable(User $user, string $secret, string $code): void

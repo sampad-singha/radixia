@@ -92,5 +92,4 @@ class SocialAccountRepository implements SocialAccountRepositoryInterface
             return $user;
         });
     }
-
 }

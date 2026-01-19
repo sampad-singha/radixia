@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\Mfa\Providers;
 
+use App\Domain\Mfa\Exceptions\InvalidTotpCodeException;
 use App\Domain\Mfa\Providers\MfaProviderInterface;
 use App\Models\User;
 use Exception;
@@ -79,7 +80,7 @@ readonly class TotpMfaProvider implements MfaProviderInterface
     public function enable(User $user, string $secret, string $code): void
     {
         if (! $this->provider->verify($secret, $code)) {
-            throw new Exception("Invalid TOTP Code");
+            throw new InvalidTotpCodeException();
         }
 
         // Generate fresh codes on enable
