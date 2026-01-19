@@ -2,23 +2,17 @@
 
 namespace App\Http\Controllers\Api\V1\Auth;
 
-use App\Application\Auth\Services\SocialAuthService;
-use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
-use App\Domain\Auth\Exceptions\SocialProviderException;
-use App\Domain\Auth\Exceptions\SocialEmailRequiredException;
+use App\Domain\Auth\Services\SocialAuthServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\SocialLoginRequest;
 use Illuminate\Http\JsonResponse;
 
 class SocialAuthController extends Controller
 {
-    public function __construct(private readonly SocialAuthService $service) {}
+    public function __construct(
+        private readonly SocialAuthServiceInterface $service
+    ) {}
 
-    /**
-     * @throws SocialEmailRequiredException
-     * @throws SocialProviderException
-     * @throws InvalidTwoFactorCodeException
-     */
     public function callback(SocialLoginRequest $request, string $provider): JsonResponse
     {
         // 1. Determine the base Frontend URL from the Origin header

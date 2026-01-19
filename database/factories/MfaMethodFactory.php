@@ -16,7 +16,6 @@ class MfaMethodFactory extends Factory
             'user_id' => User::factory(),
             'type' => 'totp',
             'secret' => 'ONSWG4TFORBV642V', // Dummy base32 secret
-            'enabled_at' => now(),
             'last_used_at' => null,
         ];
     }

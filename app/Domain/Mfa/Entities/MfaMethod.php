@@ -3,13 +3,15 @@
 namespace App\Domain\Mfa\Entities;
 
 use App\Models\User;
+use Database\Factories\MfaMethodFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MfaMethod extends Model
 {
-    use HasUuids;
+    use HasUuids, HasFactory;
     protected $fillable = [
         'user_id', // Don't forget the Foreign Key if creating directly
         'type',
@@ -36,5 +38,10 @@ class MfaMethod extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    protected static function newFactory(): MfaMethodFactory
+    {
+        return MfaMethodFactory::new();
     }
 }
