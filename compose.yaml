@@ -24,11 +24,8 @@ services:
     command: >
       sh -c "
             if [ ! -f .env ]; then
-              cp .env.example .env && php artisan key:generate;
+              cp .env.docker .env && php artisan key:generate;
             fi;
-            composer install;
-            php artisan migrate --force;
-            php artisan db:seed --force;
             php artisan serve --host=0.0.0.0 --port=8000"
 
   mysql:
