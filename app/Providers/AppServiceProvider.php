@@ -63,7 +63,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Override how the verification URL is generated
         VerifyEmail::createUrlUsing(function (object $notifiable) {
 
             // 1. Capture the Origin from the Registration/Resend request
