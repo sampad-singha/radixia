@@ -2,12 +2,13 @@
 
 namespace App\Application\Mfa;
 
+use App\Domain\Mfa\Factories\MfaFactoryInterface;
 use App\Domain\Mfa\Providers\MfaProviderInterface;
 use App\Infrastructure\Mfa\Providers\EmailMfaProvider;
 use App\Infrastructure\Mfa\Providers\TotpMfaProvider;
 use InvalidArgumentException;
 
-readonly class MfaFactory
+readonly class MfaFactory implements MfaFactoryInterface
 {
     public function __construct(
         private EmailMfaProvider $emailProvider,

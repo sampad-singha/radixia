@@ -195,4 +195,22 @@ class AuthenticationTest extends TestCase
 
         $this->assertArrayNotHasKey('token', $response->json('data') ?? []);
     }
+
+    public function test_confirm_sudo_password()
+    {
+        $user = User::factory()->create(['password' => Hash::make('password123')]);
+        $token = $user->createToken('test');
+
+        // FIX: Use correct validation fields from FormRequest
+        $response = $this->withToken($token->plainTextToken)
+            ->postJson('/api/v1/auth/confirm-sudo', [
+                'type' => 'password',      // ← Required
+                'value' => 'password123',  // ← Password field
+            ]);
+
+        $response->assertStatus(200);
+        // Optional: Verify sudo_expires_at
+        $this->assertNotNull($token->accessToken->fresh()->sudo_expires_at);
+    }
+
 }
