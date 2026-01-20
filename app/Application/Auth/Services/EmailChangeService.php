@@ -26,7 +26,7 @@ readonly class EmailChangeService implements EmailChangeServiceInterface
         $token = (string) random_int(100000, 999999);
 
         // 2. Persist to DB
-        $timeoutMinutes = config('auth.email_change_timeout', 60);
+        $timeoutMinutes = (int) config('auth.email_change_timeout', 60);
 
         $this->users->setPendingEmail(
             $user,

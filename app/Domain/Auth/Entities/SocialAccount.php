@@ -3,6 +3,7 @@
 namespace App\Domain\Auth\Entities;
 
 use App\Models\User;
+use Database\Factories\SocialAccountFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,5 +33,10 @@ class SocialAccount extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    protected static function newFactory(): SocialAccountFactory
+    {
+        return SocialAccountFactory::new();
     }
 }

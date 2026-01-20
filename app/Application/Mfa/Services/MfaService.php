@@ -2,8 +2,8 @@
 
 namespace App\Application\Mfa\Services;
 
-use App\Application\Mfa\MfaFactory;
 use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
+use App\Domain\Mfa\Factories\MfaFactoryInterface;
 use App\Domain\Mfa\Services\MfaServiceInterface;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 readonly class MfaService implements MfaServiceInterface
 {
     public function __construct(
-        private MfaFactory $mfaFactory
+        private MfaFactoryInterface $mfaFactory
     ) {}
 
     public function enable(User $user, string $type): array

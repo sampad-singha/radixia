@@ -13,14 +13,19 @@ class AuthSessionTest extends TestCase
     public function test_user_can_list_sessions()
     {
         $user = User::factory()->create();
-        // createToken returns a NewAccessToken instance
         $newToken = $user->createToken('Test Device');
 
-        // Use plainTextToken for the Authorization header
         $response = $this->withToken($newToken->plainTextToken)->getJson('/api/v1/auth/sessions');
 
         $response->assertStatus(200)
-            ->assertJsonStructure(['data' => ['sessions']]);
+            ->assertJsonStructure(['data' => [  // Change from ['data' => ['sessions']]
+                [
+                    'id',
+                    'ip_address',
+                    'name',
+                    'last_used_at'  // Common session fields
+                ]
+            ]]);
     }
 
     public function test_user_can_revoke_specific_session()
