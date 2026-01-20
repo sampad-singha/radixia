@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Infrastructure\Instructors\Services;
+namespace App\Application\Instructors\Services;
 
 use App\Domain\Instructors\Entities\InstructorProfile;
 use App\Domain\Instructors\Exceptions\InstructorProfileAlreadyExistsException;
