@@ -13,7 +13,7 @@ class MfaMethod extends Model
 {
     use HasUuids, HasFactory;
     protected $fillable = [
-        'user_id', // Don't forget the Foreign Key if creating directly
+        'user_id',
         'type',
         'secret',
         'backup_codes',
@@ -31,8 +31,8 @@ class MfaMethod extends Model
         'is_default' => 'boolean',
         'last_used_at' => 'datetime',
 
-        'secret' => 'encrypted:array',       // <--- CHANGE THIS
-        'backup_codes' => 'encrypted:array', // <--- CHANGE THIS
+        'secret' => 'encrypted:array',
+        'backup_codes' => 'encrypted:array',
     ];
 
     public function user(): BelongsTo
