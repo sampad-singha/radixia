@@ -5,7 +5,6 @@ namespace Tests\Feature\Api\V1\User;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class EmailChangeTest extends TestCase
@@ -69,10 +68,12 @@ class EmailChangeTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)->postJson('/api/v1/user/email/verify', [
-            'code' => '000000',
+            'code' => '000000',  // Invalid code
         ]);
 
-        // Updated assertion to match actual application behavior (422)
-        $response->assertStatus(422);
+        $response
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['verification_code'])  // ← Copilot's suggestion
+            ->assertJsonPath('message', fn($msg) => str_contains($msg, 'The email verification code is invalid or expired.')); // Bonus specificity
     }
 }
