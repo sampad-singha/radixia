@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Program extends Model
@@ -29,6 +30,12 @@ class Program extends Model
         'instructor_id',
     ];
 
+    protected $casts = [
+        'id' => 'string',
+        'instructor_id' => 'string',
+        'deleted_at' => 'datetime',
+    ];
+
     public function instructor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'instructor_id');
@@ -39,9 +46,14 @@ class Program extends Model
         return $this->belongsToMany(Topic::class, 'program_topic');
     }
 
-    public function cohorts()
+    public function cohorts(): HasMany
     {
-//        return $this->hasMany(Cohort::class);
+        return $this->hasMany(Cohort::class);
+    }
+
+    public function modules(): HasMany
+    {
+        return $this->hasMany(Module::class);
     }
 
     protected static function newFactory(): ProgramFactory

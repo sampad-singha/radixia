@@ -14,33 +14,28 @@ return new class extends Migration
         Schema::create('cohorts', function (Blueprint $table) {
             $table->uuid('id')->primary();
 
-            // Parent Program
+            // Relationships
             $table->foreignUuid('program_id')->constrained('programs')->onDelete('cascade');
 
-            // Specific Instructor (Optional override)
-            // If null, falls back to program->instructor_id
-            $table->foreignUuid('instructor_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignUuid('assigned_instructor_id')->constrained('users')->onDelete('cascade');
 
             // Core Info
-            $table->string('name'); // e.g., "Batch 01", "January 2026"
+            $table->string('name');
             $table->date('start_date');
             $table->date('end_date')->nullable();
 
-            // Capacity & Sales
+            // Inventory
             $table->integer('capacity')->unsigned();
-            $table->integer('sold_seats')->default(0);
 
-            // Pricing (Snapshot, can differ from Program default)
+            // Pricing (Base Price Only)
             $table->decimal('price', 10, 2);
-            $table->decimal('discount_price', 10, 2)->nullable();
 
-            // State
-            $table->enum('status', ['open', 'full', 'closed', 'completed', 'cancelled'])->default('open');
+            // Lifecycle
+            $table->enum('status', ['scheduled', 'active', 'completed', 'cancelled'])->default('scheduled');
 
             $table->timestamps();
             $table->softDeletes();
 
-            // Indexes
             $table->index(['program_id', 'status']);
         });
     }
