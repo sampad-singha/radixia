@@ -6,8 +6,8 @@ use Exception;
 
 class LessonNotFoundException extends Exception
 {
-    public function __construct()
+    public function __construct($message = 'The requested lesson was not found.')
     {
-        parent::__construct('The requested lesson was not found.', 404);
+        parent::__construct($message, 404);
     }
 }

@@ -6,8 +6,8 @@ use Exception;
 
 class ProgramNotFoundException extends Exception
 {
-    public function __construct()
+    public function __construct($message = 'The requested program was not found.')
     {
-        parent::__construct('The requested program was not found.', 404);
+        parent::__construct($message, 404);
     }
 }
