@@ -10,6 +10,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $module_id
+ * @property string $title
+ * @property string|null $description
+ * @property int $duration_minutes
+ * @property int $order_index
+ */
 class Lesson extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;

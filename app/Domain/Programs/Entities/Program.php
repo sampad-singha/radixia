@@ -13,6 +13,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property string $title
+ * @property string $slug
+ * @property string|null $description
+ * @property string|null $short_description
+ * @property string $level
+ * @property string|null $thumbnail_url
+ * @property string|null $intro_video_url
+ * @property string $status
+ * @property string $instructor_id
+ */
 class Program extends Model
 {
     /** @use HasFactory<ProgramFactory> */

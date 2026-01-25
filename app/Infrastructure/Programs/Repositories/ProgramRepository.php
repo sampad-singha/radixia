@@ -38,4 +38,16 @@ class ProgramRepository implements ProgramRepositoryInterface
             ->orderBy('created_at', 'desc')
             ->get();
     }
+
+    public function findWithCurriculum(string $idOrSlug): ?Program
+    {
+        return Program::query()
+            ->where('id', $idOrSlug)
+            ->orWhere('slug', $idOrSlug)
+            ->with([
+                'modules' => fn($q) => $q->orderBy('order_index'),
+                'modules.lessons' => fn($q) => $q->orderBy('order_index')
+            ])
+            ->first();
+    }
 }

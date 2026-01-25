@@ -8,6 +8,8 @@ use App\Application\Auth\Services\SocialAuthService;
 use App\Application\Instructors\Services\InstructorProfileService;
 use App\Application\Mfa\MfaFactory;
 use App\Application\Mfa\Services\MfaService;
+use App\Application\Programs\Services\CohortService;
+use App\Application\Programs\Services\ProgramService;
 use App\Application\Users\Services\UserProfileService;
 use App\Domain\Auth\Repositories\AccessTokenRepositoryInterface;
 use App\Domain\Auth\Repositories\SocialAccountRepositoryInterface;
@@ -24,6 +26,8 @@ use App\Domain\Programs\Repositories\CohortSessionRepositoryInterface;
 use App\Domain\Programs\Repositories\LessonRepositoryInterface;
 use App\Domain\Programs\Repositories\ModuleRepositoryInterface;
 use App\Domain\Programs\Repositories\ProgramRepositoryInterface;
+use App\Domain\Programs\Services\CohortServiceInterface;
+use App\Domain\Programs\Services\ProgramServiceInterface;
 use App\Domain\Users\Repositories\UserProfileRepositoryInterface;
 use App\Domain\Users\Repositories\UserRepositoryInterface;
 use App\Domain\Users\Services\UserProfileServiceInterface;
@@ -50,7 +54,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // User & Authentication Bindings
+        /*------------------------------------------
+         * Auth Domain Bindings
+         *------------------------------------------
+         * */
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
         $this->app->bind(AuthServiceInterface::class, AuthService::class);
         $this->app->bind(AccessTokenRepositoryInterface::class, SanctumAccessTokenRepository::class);
@@ -61,23 +68,33 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(MfaServiceInterface::class, MfaService::class);
         $this->app->bind(MfaFactoryInterface::class, MfaFactory::class);
 
-        // User Profile Bindings
+        /*------------------------------------------
+         * User Domain Bindings
+         *------------------------------------------
+         * */
         $this->app->bind(UserProfileRepositoryInterface::class, UserProfileRepository::class);
         $this->app->bind(UserProfileServiceInterface::class, UserProfileService::class);
 
-        // Instructor Profile Bindings
+        /*------------------------------------------
+         * Instructor Domain Bindings
+         *------------------------------------------
+         * */
         $this->app->bind(InstructorProfileRepositoryInterface::class, InstructorProfileRepository::class);
         $this->app->bind(InstructorProfileServiceInterface::class, InstructorProfileService::class);
 
-        // Program and Cohort
+        /*------------------------------------------
+         * Program Domain Bindings
+         *------------------------------------------
+         * */
+        // Repositories
         $this->app->bind(ProgramRepositoryInterface::class, ProgramRepository::class);
         $this->app->bind(CohortRepositoryInterface::class, CohortRepository::class);
-
-        // Module and Lesson
         $this->app->bind(ModuleRepositoryInterface::class, ModuleRepository::class);
         $this->app->bind(LessonRepositoryInterface::class, LessonRepository::class);
-
         $this->app->bind(CohortSessionRepositoryInterface::class, CohortSessionRepository::class);
+        // Services
+        $this->app->bind(ProgramServiceInterface::class, ProgramService::class);
+        $this->app->bind(CohortServiceInterface::class, CohortService::class);
 
     }
 

@@ -20,4 +20,6 @@ interface ProgramRepositoryInterface
 
 
     public function allPublished(): Collection;
+
+    public function findWithCurriculum(string $idOrSlug): ?Program;
 }
