@@ -4,6 +4,7 @@ namespace App\Domain\Programs\Entities;
 
 use App\Models\User;
 use Database\Factories\CohortFactory;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,6 +12,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property string program_id
+ * @property string assigned_instructor_id
+ * @property string name
+ * @property DateTimeInterface start_date
+ * @property DateTimeInterface end_date
+ * @property int capacity
+ * @property float price
+ * @property string status
+ */
 class Cohort extends Model
 {
     /** @use HasFactory<CohortFactory> */
@@ -35,9 +46,9 @@ class Cohort extends Model
         'deleted_at' => 'datetime',
     ];
 
-    public function enrollments()
+    public function enrollments(): HasMany
     {
-//        return $this->hasMany(Enrollment::class);
+        return $this->hasMany(CohortEnrollment::class);
     }
 
     public function program(): BelongsTo

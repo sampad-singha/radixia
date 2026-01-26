@@ -5,6 +5,7 @@ namespace App\Infrastructure\Programs\Repositories;
 use App\Domain\Programs\Entities\Program;
 use App\Domain\Programs\Repositories\ProgramRepositoryInterface;
 use Illuminate\Support\Collection;
+use Str;
 
 class ProgramRepository implements ProgramRepositoryInterface
 {
@@ -34,7 +35,7 @@ class ProgramRepository implements ProgramRepositoryInterface
     public function allPublished(): Collection
     {
         return Program::query()
-            ->where('is_published', true)
+            ->where('status', 'published')
             ->orderBy('created_at', 'desc')
             ->get();
     }

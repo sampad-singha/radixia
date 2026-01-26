@@ -62,7 +62,7 @@ readonly class CohortService implements CohortServiceInterface
         // 2. Fetch the Lesson
         $lesson = $this->lessonRepository->findById($lessonId);
         if (!$lesson) {
-            throw new LessonNotFoundException("Cannot schedule session: Lesson [{$lessonId}] not found.");
+            throw new LessonNotFoundException("Cannot schedule session: Lesson [$lessonId] not found.");
         }
 
         // 3. Fetch the Module to get the Program ID
@@ -73,7 +73,7 @@ readonly class CohortService implements CohortServiceInterface
 
         // 4. THE INTEGRITY CHECK
         // Compare the Lesson's Program ID with the Cohort's Program ID
-        if ($module->program_id !== $cohort->program_id) {
+        if ($module->program_id != $cohort->program_id) {
             throw new ProgramIntegrityException("Lesson does not belong to the Program associated with this Cohort.");
         }
 

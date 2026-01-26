@@ -3,11 +3,21 @@
 namespace App\Domain\Programs\Entities;
 
 use Database\Factories\LessonFactory;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property string cohort_id
+ * @property string lesson_id
+ * @property DateTimeInterface starts_at
+ * @property DateTimeInterface ends_at
+ * @property string meeting_url
+ * @property string recording_url
+ * @property string status
+ */
 class CohortSession extends Model
 {
     use HasFactory, HasUuids;

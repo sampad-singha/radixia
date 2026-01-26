@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * @property int $module_id
+ * @property string $module_id
  * @property string $title
  * @property string|null $description
  * @property int $duration_minutes

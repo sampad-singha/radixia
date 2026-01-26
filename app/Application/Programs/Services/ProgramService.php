@@ -2,6 +2,7 @@
 
 namespace App\Application\Programs\Services;
 
+use Illuminate\Support\Str;
 use App\Domain\Programs\Entities\{Lesson, Module, Program};
 use App\Domain\Programs\Exceptions\{LessonNotFoundException, ModuleNotFoundException, ProgramNotFoundException};
 use App\Domain\Programs\Repositories\{LessonRepositoryInterface, ModuleRepositoryInterface, ProgramRepositoryInterface};
@@ -46,6 +47,11 @@ readonly class ProgramService implements ProgramServiceInterface
 
     public function createProgram(array $data): Program
     {
+        $data['instructor_id'] = auth()->id();
+        //Generate slug if not provided
+        if (empty($data['slug'])) {
+            $data['slug'] = Str::slug($data['title']);
+        }
         $program = $this->programRepository->create($data);
         Cache::tags(['programs_list'])->flush();
         return $program;
@@ -62,6 +68,17 @@ readonly class ProgramService implements ProgramServiceInterface
             throw new ProgramNotFoundException();
         }
 
+        //Generate slug if not provided
+        if ($data['change_slug']) {
+            if (empty($data['slug'])) {
+                $titleForSlug = $data['title'] ?? $program->title;
+                $data['slug'] = Str::slug($titleForSlug);
+            } else {
+                $data['slug'] = Str::slug($data['slug']);
+            }
+        }else{
+            unset($data['slug']);
+        }
         $updated = $this->programRepository->update($program, $data);
 
         // Invalidate both the list and the specific program cache
