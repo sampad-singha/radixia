@@ -26,6 +26,11 @@ class CohortRepository implements CohortRepositoryInterface
         return Cohort::query()->find($id);
     }
 
+    public function findOrFail(string $id): Cohort
+    {
+        return Cohort::query()->findOrFail($id);
+    }
+
 
     public function findByProgram(string $programId): Collection
     {

@@ -41,7 +41,11 @@ readonly class CohortService implements CohortServiceInterface
             throw new ProgramNotFoundException("Cannot create cohort: Program [{$data['program_id']}] not found.");
         }
 
-        return $this->cohortRepository->create($data);
+        $cohortData = array_merge($data, [
+            'status' => 'scheduled',
+        ]);
+
+        return $this->cohortRepository->create($cohortData);
     }
 
     /**
@@ -85,34 +89,39 @@ readonly class CohortService implements CohortServiceInterface
         return $this->cohortSessionRepository->create($sessionData);
     }
 
-
     public function update(string $cohortId, array $data): Cohort
     {
         $cohort = $this->cohortRepository->findOrFail($cohortId);
-
 
         return $this->cohortRepository->update($cohort, $data);
     }
 
 
-    public function open(string $cohortId): Cohort
+    public function active(string $cohortId): Cohort
     {
         $cohort = $this->cohortRepository->findOrFail($cohortId);
 
-
         return $this->cohortRepository->update($cohort, [
-            'status' => 'open',
+            'status' => 'active',
         ]);
     }
 
 
-    public function close(string $cohortId): Cohort
+    public function complete(string $cohortId): Cohort
     {
         $cohort = $this->cohortRepository->findOrFail($cohortId);
 
+        return $this->cohortRepository->update($cohort, [
+            'status' => 'completed',
+        ]);
+    }
+
+    public function cancel(string $cohortId): Cohort
+    {
+        $cohort = $this->cohortRepository->findOrFail($cohortId);
 
         return $this->cohortRepository->update($cohort, [
-            'status' => 'closed',
+            'status' => 'cancelled',
         ]);
     }
 }

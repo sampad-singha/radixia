@@ -31,7 +31,9 @@ return new class extends Migration
             $table->decimal('price', 10, 2);
 
             // Lifecycle
-            $table->enum('status', ['scheduled', 'active', 'completed', 'cancelled'])->default('scheduled');
+            $table->enum('status', ['scheduled', 'active', 'completed', 'cancelled'])
+                ->default('scheduled')
+                ->comment('scheduled(D), active, completed, cancelled');
 
             $table->timestamps();
             $table->softDeletes();
