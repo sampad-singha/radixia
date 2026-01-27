@@ -9,12 +9,9 @@ interface ProgramRepositoryInterface
 {
     public function create(array $data): Program;
 
-
     public function update(Program $program, array $data): Program;
 
-
     public function findById(string $id): ?Program;
-
 
     public function findBySlug(string $slug): ?Program;
 
@@ -22,4 +19,8 @@ interface ProgramRepositoryInterface
     public function allPublished(): Collection;
 
     public function findWithCurriculum(string $idOrSlug): ?Program;
+
+    public function hasActiveCohorts(string $programId): bool;
+
+    public function getModuleMaxIndex(string $programId): int;
 }

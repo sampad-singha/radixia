@@ -29,10 +29,16 @@ interface ProgramServiceInterface
 
     public function updateModule(string $moduleId, array $data): Module;
 
+    public function reorderModules(string $programId, array $orderedIds): void;
+
     /**
      * Lesson Operations
      */
     public function addLessonToModule(string $moduleId, array $data): Lesson;
 
+    public function updateLesson(string $lessonId, array $data): Lesson;
+
     public function deleteLesson(string $lessonId): void;
+
+    public function reorderLessons(string $moduleId, array $orderedIds): void;
 }

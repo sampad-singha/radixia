@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\Programs\Repositories;
 
+use App\Domain\Programs\Entities\Lesson;
 use App\Domain\Programs\Entities\Module;
 use App\Domain\Programs\Repositories\ModuleRepositoryInterface;
 use Illuminate\Support\Collection;
@@ -39,5 +40,15 @@ class ModuleRepository implements ModuleRepositoryInterface
             ->where('program_id', $programId)
             ->orderBy('order_index')
             ->get();
+    }
+
+    public function updateOrderIndex(string $moduleId, int $newOrder): void
+    {
+        Module::where('id', $moduleId)->update(['order_index' => $newOrder]);
+    }
+
+    public function getLessonMaxIndex(string $moduleId): int
+    {
+        return (int) Lesson::where('module_id', $moduleId)->max('order_index') ?? 0;
     }
 }

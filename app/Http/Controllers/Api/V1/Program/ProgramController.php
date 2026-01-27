@@ -2,9 +2,16 @@
 
 namespace App\Http\Controllers\Api\V1\Program;
 
+use App\Domain\Programs\Exceptions\LessonNotFoundException;
 use App\Domain\Programs\Services\ProgramServiceInterface;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Program\CreateLessonRequest;
+use App\Http\Requests\Api\V1\Program\CreateModuleRequest;
 use App\Http\Requests\Api\V1\Program\CreateProgramRequest;
+use App\Http\Requests\Api\V1\Program\ReorderLessonsRequest;
+use App\Http\Requests\Api\V1\Program\ReorderModulesRequest;
+use App\Http\Requests\Api\V1\Program\UpdateLessonRequest;
+use App\Http\Requests\Api\V1\Program\UpdateModuleRequest;
 use App\Http\Requests\Api\V1\Program\UpdateProgramRequest;
 
 class ProgramController extends Controller
@@ -54,14 +61,15 @@ class ProgramController extends Controller
 
     public function archiveProgram(string $id)
     {
-        $this->programService->archiveProgram($id);
+        $program = $this->programService->archiveProgram($id);
 
         return response()->json([
             'message' => 'Program archived successfully.',
+            'data' => $program
         ]);
     }
 
-    public function addModuleToProgram(string $programId, CreateProgramRequest $request)
+    public function addModuleToProgram(string $programId, CreateModuleRequest $request)
     {
         $module = $this->programService->addModuleToProgram($programId, $request->validated());
 
@@ -71,7 +79,7 @@ class ProgramController extends Controller
         ], 201);
     }
 
-    public function updateModule(string $moduleId, CreateProgramRequest $request)
+    public function updateModule(string $programId,string $moduleId, UpdateModuleRequest $request)
     {
         $module = $this->programService->updateModule($moduleId, $request->validated());
 
@@ -81,7 +89,14 @@ class ProgramController extends Controller
         ]);
     }
 
-    public function addLessonToModule(string $moduleId, CreateProgramRequest $request)
+    public function reorderModules(ReorderModulesRequest $request, $programId)
+    {
+        $this->programService->reorderModules($programId, $request->validated()['ids']);
+
+        return response()->json(['message' => 'Curriculum updated successfully']);
+    }
+
+    public function addLessonToModule(string $programId, string $moduleId, CreateLessonRequest $request)
     {
         $lesson = $this->programService->addLessonToModule($moduleId, $request->validated());
 
@@ -89,6 +104,44 @@ class ProgramController extends Controller
             'message' => 'Lesson added to module successfully.',
             'lesson' => $lesson,
         ], 201);
+    }
+
+    public function updateLesson(string $programId, string $moduleId, string $lessonId, UpdateLessonRequest $request)
+    {
+        $lesson = $this->programService->updateLesson($lessonId, $request->validated());
+
+        return response()->json([
+            'message' => 'Lesson updated successfully.',
+            'lesson' => $lesson,
+        ]);
+    }
+
+    public function deleteLesson($programId, $moduleId, $lessonId)
+    {
+        $this->programService->deleteLesson($lessonId);
+
+        return response()->json(['message' => 'Lesson deleted successfully']);
+    }
+
+    /**
+     * @throws LessonNotFoundException
+     */
+    public function restoreLesson(string $programId, string $moduleId, string $lessonId)
+    {
+        // The Service handles the Smart Restore logic (checking index occupancy)
+        $lesson = $this->programService->restoreLesson($lessonId);
+
+        return response()->json([
+            'message' => 'Lesson restored successfully.',
+            'data' => $lesson
+        ]);
+    }
+
+    public function reorderLessons($programId, $moduleId, ReorderLessonsRequest $request)
+    {
+        $this->programService->reorderLessons($moduleId, $request->validated()['ids']);
+
+        return response()->json(['message' => 'Lessons reordered successfully']);
     }
 
 

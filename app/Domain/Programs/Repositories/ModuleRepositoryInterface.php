@@ -20,4 +20,8 @@ interface ModuleRepositoryInterface
 
 
     public function findByProgram(string $programId): Collection;
+
+    public function updateOrderIndex(string $moduleId, int $newOrder);
+
+    public function getLessonMaxIndex(string $moduleId): int;
 }

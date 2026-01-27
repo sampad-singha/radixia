@@ -2,6 +2,8 @@
 
 namespace App\Infrastructure\Programs\Repositories;
 
+use App\Domain\Programs\Entities\Cohort;
+use App\Domain\Programs\Entities\Module;
 use App\Domain\Programs\Entities\Program;
 use App\Domain\Programs\Repositories\ProgramRepositoryInterface;
 use Illuminate\Support\Collection;
@@ -50,5 +52,18 @@ class ProgramRepository implements ProgramRepositoryInterface
                 'modules.lessons' => fn($q) => $q->orderBy('order_index')
             ])
             ->first();
+    }
+
+    public function hasActiveCohorts(string $programId): bool
+    {
+        return Cohort::where('program_id', $programId)
+            ->whereIn('status', ['scheduled', 'active'])
+            ->exists();
+    }
+
+    public function getModuleMaxIndex(string $programId): int
+    {
+        // We use the model directly to get the max value
+        return (int) Module::where('program_id', $programId)->max('order_index') ?? 0;
     }
 }

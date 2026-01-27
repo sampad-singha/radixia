@@ -35,7 +35,7 @@ class Cohort extends Model
         'end_date',
         'capacity',
         'price',
-        'status',
+        'status', // 'scheduled', 'active', 'completed', 'cancelled'
     ];
 
     protected $casts = [

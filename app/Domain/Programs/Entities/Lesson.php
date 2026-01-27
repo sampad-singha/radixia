@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $description
  * @property int $duration_minutes
  * @property int $order_index
+ * @property Module $module
  */
 class Lesson extends Model
 {
