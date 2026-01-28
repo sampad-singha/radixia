@@ -88,7 +88,11 @@ readonly class CohortService implements CohortServiceInterface
                 }
 
                 // Eager load the full content tree
-                return $cohort->load(['program.modules.lessons']);
+                return $cohort->load([
+                    'program.modules.lessons',
+                    'sessions',
+                    'enrollments'
+                ]);
             }
         );
     }
