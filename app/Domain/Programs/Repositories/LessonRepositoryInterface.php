@@ -17,6 +17,8 @@ interface LessonRepositoryInterface
 
     public function findByModule(string $moduleId): Collection;
 
+    public function getTrashedByModuleId(string $moduleId): Collection;
+
     public function updateOrderIndex(string $lessonId, int $newOrder): void;
 
     public function findWithTrashed(string $id): ?Lesson;

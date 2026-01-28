@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Program;
 
 use App\Domain\Programs\Exceptions\LessonNotFoundException;
+use App\Domain\Programs\Exceptions\ModuleNotFoundException;
 use App\Domain\Programs\Services\ProgramServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Program\CreateLessonRequest;
@@ -86,6 +87,33 @@ class ProgramController extends Controller
         return response()->json([
             'message' => 'Module updated successfully.',
             'module' => $module,
+        ]);
+    }
+
+    /**
+     * Soft delete a module and its associated lessons.
+     * @throws ModuleNotFoundException
+     */
+    public function deleteModule(string $programId, string $moduleId)
+    {
+        $this->programService->deleteModule($moduleId);
+
+        return response()->json([
+            'message' => 'Module and its lessons have been moved to trash.'
+        ]);
+    }
+
+    /**
+     * Restore a soft-deleted module and its lessons.
+     * @throws ModuleNotFoundException
+     */
+    public function restoreModule(string $programId, string $moduleId)
+    {
+        $module = $this->programService->restoreModule($moduleId);
+
+        return response()->json([
+            'message' => 'Module and its lessons restored successfully.',
+            'data' => $module
         ]);
     }
 

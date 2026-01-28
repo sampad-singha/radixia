@@ -27,6 +27,24 @@ class ModuleRepository implements ModuleRepositoryInterface
         $module->delete();
     }
 
+    public function findWithTrashed(string $id): ?Module
+    {
+        /* @var Module|null */
+        return Module::withTrashed()->find($id);
+    }
+
+    public function restore(Module $module): bool
+    {
+        return $module->restore();
+    }
+
+    public function isIndexOccupied(string $programId, int $index): bool
+    {
+        return Module::where('program_id', $programId)
+            ->where('order_index', $index)
+            ->exists();
+    }
+
 
     public function findById(string $id): ?Module
     {

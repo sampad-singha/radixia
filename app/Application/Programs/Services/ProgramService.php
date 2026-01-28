@@ -154,6 +154,62 @@ readonly class ProgramService implements ProgramServiceInterface
     }
 
     /**
+     * @throws ModuleNotFoundException
+     */
+    public function deleteModule(string $moduleId): void
+    {
+        $module = $this->moduleRepository->findById($moduleId);
+        if (!$module) throw new ModuleNotFoundException();
+
+        // 1. Fetch all active lessons belonging to this module
+        $lessons = $this->lessonRepository->findByModule($moduleId);
+
+        // 2. Loop and delete using existing repository logic
+        // This ensures any logic in your delete() method is respected
+        foreach ($lessons as $lesson) {
+            $this->lessonRepository->delete($lesson);
+        }
+
+        // 3. Soft delete the module itself
+        $this->moduleRepository->delete($module);
+
+        $this->clearProgramCache($module->program_id);
+    }
+
+    /**
+     * @throws ModuleNotFoundException
+     */
+    public function restoreModule(string $moduleId): Module
+    {
+        $module = $this->moduleRepository->findWithTrashed($moduleId);
+        if (!$module) throw new ModuleNotFoundException();
+
+        // 1. Fetch all trashed lessons for this module
+        $trashedLessons = $this->lessonRepository->getTrashedByModuleId($moduleId);
+
+        // 2. Loop and restore
+        foreach ($trashedLessons as $lesson) {
+            $this->lessonRepository->restore($lesson);
+        }
+
+        // 3. Handle Module Smart Restore Index
+        $isSpotTaken = $this->moduleRepository->isIndexOccupied(
+            $module->program_id,
+            $module->order_index
+        );
+
+        if ($isSpotTaken) {
+            $maxIndex = $this->programRepository->getModuleMaxIndex($module->program_id);
+            $module->order_index = $maxIndex + 1;
+        }
+
+        $this->moduleRepository->restore($module);
+        $this->clearProgramCache($module->program_id);
+
+        return $module;
+    }
+
+    /**
      * @throws Throwable
      */
     public function reorderModules(string $programId, array $orderedIds): void

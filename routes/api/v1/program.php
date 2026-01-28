@@ -17,12 +17,11 @@ Route::prefix('programs')->group(function () {
         Route::delete('/{program}/modules/{module}/lessons/{lesson}', [ProgramController::class, 'deleteLesson']);
 
         // 2. MODULES (Mid-level nesting)
-        // Note: Reorder is above the generic /{module} to prevent conflicts
         Route::patch('/{program}/modules/reorder', [ProgramController::class, 'reorderModules']);
         Route::post('/{program}/modules', [ProgramController::class, 'addModuleToProgram']);
-
-        // This generic {module} wildcard is now BELOW the specific /lessons/reorder path
+        Route::patch('/{program}/modules/{module}/restore', [ProgramController::class, 'restoreModule']);
         Route::put('/{program}/modules/{module}', [ProgramController::class, 'updateModule']);
+        Route::delete('/{program}/modules/{module}', [ProgramController::class, 'deleteModule']);
 
         // 3. PROGRAMS (Top-level)
         Route::patch('/{program}/archive', [ProgramController::class, 'archiveProgram']);

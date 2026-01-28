@@ -41,6 +41,11 @@ class LessonRepository implements LessonRepositoryInterface
             ->get();
     }
 
+    public function getTrashedByModuleId(string $moduleId): Collection
+    {
+        return Lesson::onlyTrashed()->where('module_id', $moduleId)->get();
+    }
+
     public function updateOrderIndex(string $lessonId, int $newOrder): void
     {
         Lesson::where('id', $lessonId)->update(['order_index' => $newOrder]);

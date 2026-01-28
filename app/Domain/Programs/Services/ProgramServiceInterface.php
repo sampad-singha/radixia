@@ -29,6 +29,10 @@ interface ProgramServiceInterface
 
     public function updateModule(string $moduleId, array $data): Module;
 
+    public function deleteModule(string $moduleId): void;
+
+    public function restoreModule(string $moduleId): Module;
+
     public function reorderModules(string $programId, array $orderedIds): void;
 
     /**

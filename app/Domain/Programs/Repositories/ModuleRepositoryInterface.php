@@ -15,6 +15,12 @@ interface ModuleRepositoryInterface
 
     public function delete(Module $module): void;
 
+    public function findWithTrashed(string $id): ?Module;
+
+    public function restore(Module $module): bool;
+
+    public function isIndexOccupied(string $programId, int $index): bool;
+
 
     public function findById(string $id): ?Module;
 
