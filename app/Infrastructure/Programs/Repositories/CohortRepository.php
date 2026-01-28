@@ -4,7 +4,10 @@ namespace App\Infrastructure\Programs\Repositories;
 
 use App\Domain\Programs\Entities\Cohort;
 use App\Domain\Programs\Repositories\CohortRepositoryInterface;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class CohortRepository implements CohortRepositoryInterface
 {
@@ -18,6 +21,44 @@ class CohortRepository implements CohortRepositoryInterface
     {
         $cohort->update($data);
         return $cohort->fresh();
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function delete(Cohort $cohort): bool
+    {
+        return DB::transaction(function () use ($cohort) {
+            // 1. Soft delete children first
+            $cohort->sessions()->delete();
+            $cohort->enrollments()->delete();
+
+            // 2. Soft delete the parent
+            return $cohort->delete();
+        });
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function restore(string $id): bool
+    {
+        return DB::transaction(function () use ($id) {
+            // We must use withTrashed() to find the record
+            $cohort = Cohort::withTrashed()->findOrFail($id);
+
+            // 1. Restore the parent
+            $restored = $cohort->restore();
+
+            if ($restored) {
+                // 2. Restore children
+                /** @var HasMany $sessions */
+                $cohort->sessions()->withTrashed()->restore();
+                $cohort->enrollments()->withTrashed()->restore();
+            }
+
+            return $restored;
+        });
     }
 
 
@@ -36,7 +77,8 @@ class CohortRepository implements CohortRepositoryInterface
     {
         return Cohort::query()
             ->where('program_id', $programId)
-            ->orderBy('start_date')
+            ->whereNot('status', 'cancelled')
+            ->orderBy('start_date', 'desc')
             ->get();
     }
 
@@ -46,7 +88,7 @@ class CohortRepository implements CohortRepositoryInterface
         return Cohort::query()
             ->where('program_id', $programId)
             ->whereIn('status', ['scheduled', 'active'])
-            ->orderBy('start_date')
+            ->orderBy('start_date', 'desc')
             ->get();
     }
 }

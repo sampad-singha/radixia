@@ -36,8 +36,10 @@ class ProgramRepository implements ProgramRepositoryInterface
 
     public function allPublished(): Collection
     {
+        // We will only return programs that are published and has at least one active or upcoming cohort
         return Program::query()
-            ->where('status', 'published')
+            ->where('is_published', true)
+            ->whereHas('cohorts', fn($q) => $q->whereIn('status', ['scheduled', 'active']))
             ->orderBy('created_at', 'desc')
             ->get();
     }

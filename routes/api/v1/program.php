@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Program\CohortController;
 use App\Http\Controllers\Api\V1\Program\ProgramController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,9 +26,22 @@ Route::prefix('programs')->group(function () {
 
         // 3. PROGRAMS (Top-level)
         Route::patch('/{program}/archive', [ProgramController::class, 'archiveProgram']);
+        Route::get('/{program}/cohorts', [CohortController::class, 'listCohortsByProgram']);
         Route::put('/{program}', [ProgramController::class, 'updateProgram']);
     });
 
     Route::get('/', [ProgramController::class, 'listPublishedPrograms']);
     Route::get('/{slugOrId}', [ProgramController::class, 'getProgramDetails']);
+});
+
+Route::prefix('cohorts')->group(function () {
+    Route::middleware(['auth:sanctum', 'ability:access-api'])->group(function () {
+        Route::post('/', [CohortController::class, 'createCohort']);
+
+        Route::put('/{cohort}', [CohortController::class, 'updateCohort']);
+        Route::delete('/{cohort}', [CohortController::class, 'deleteCohort']);
+        Route::patch('/{cohort}/restore', [CohortController::class, 'restoreCohort']);
+    });
+
+    Route::get('/{cohortId}', [CohortController::class, 'getCohortDetails']);
 });

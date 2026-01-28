@@ -12,6 +12,10 @@ interface CohortRepositoryInterface
 
     public function update(Cohort $cohort, array $data): Cohort;
 
+    public function delete(Cohort $cohort): bool;
+
+    public function restore(string $id): bool;
+
 
     public function findById(string $id): ?Cohort;
 

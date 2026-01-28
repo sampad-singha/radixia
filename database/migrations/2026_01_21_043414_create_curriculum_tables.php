@@ -55,6 +55,7 @@ return new class extends Migration
             $table->enum('status', ['scheduled', 'live', 'completed', 'cancelled'])->default('scheduled');
 
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index(['cohort_id', 'starts_at']);
         });
