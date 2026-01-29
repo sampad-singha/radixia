@@ -69,9 +69,7 @@ readonly class CohortService implements CohortServiceInterface
 
         if(!isset($data['assigned_instructor_id']))
         {
-            $cohortData = array_merge($data, [
-                'assigned_instructor_id' => Auth::id(),
-            ]);
+            $cohortData['assigned_instructor_id'] = Auth::id();
         }
 
         $cohort = $this->cohortRepository->create($cohortData);
@@ -92,7 +90,7 @@ readonly class CohortService implements CohortServiceInterface
         return Cache::tags(["cohort_$id", "program_{$cohort->program_id}"])->remember(
             self::CACHE_PREFIX . $id,
             self::CACHE_TTL,
-            fn() => $cohort->load(['program.modules.lessons', 'sessions'])
+            fn() => $cohort->load(['program.modules.lessons'])
         );
     }
 
@@ -117,7 +115,7 @@ readonly class CohortService implements CohortServiceInterface
         if ($activeAndReservedCount > 0) {
             // Field Restrictions (Price/Program)
             foreach (['price', 'program_id'] as $field) {
-                if (isset($data[$field]) && $data[$field] != $cohort->{$field}) {
+                if (isset($data[$field]) && $data[$field] !== $cohort->{$field}) {
                     throw new FieldRestrictedException($field);
                 }
             }
@@ -136,9 +134,7 @@ readonly class CohortService implements CohortServiceInterface
         }
 
         if(!isset($data['assigned_instructor_id'])) {
-            $data = array_merge($data, [
-                'assigned_instructor_id' => $cohort->assigned_instructor_id,
-            ]);
+            $data['assigned_instructor_id'] = $cohort->assigned_instructor_id;
         }
 
         $updatedCohort = $this->cohortRepository->update($cohort, $data);
@@ -214,7 +210,7 @@ readonly class CohortService implements CohortServiceInterface
 
         // 4. THE INTEGRITY CHECK
         // Compare the Lesson's Program ID with the Cohort's Program ID
-        if ($module->program_id != $cohort->program_id) {
+        if ($module->program_id !== $cohort->program_id) {
             throw new ProgramIntegrityException("Lesson does not belong to the Program associated with this Cohort.");
         }
 

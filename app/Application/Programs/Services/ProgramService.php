@@ -72,9 +72,10 @@ readonly class ProgramService implements ProgramServiceInterface
         {
             throw new ProgramNotFoundException();
         }
+        $changeSlug = $data['change_slug'] ?? false;
 
         //Generate slug if not provided
-        if ($data['change_slug']) {
+        if ($changeSlug) {
             if (empty($data['slug'])) {
                 $titleForSlug = $data['title'] ?? $program->title;
                 $data['slug'] = Str::slug($titleForSlug);
