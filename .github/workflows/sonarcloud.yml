@@ -34,7 +34,6 @@ jobs:
       - name: Run Tests with Coverage
         run: |
           docker compose up -d --wait mysql
-          # Run tests and explicitly ensure the file is written to the host volume
           docker compose run --rm --build \
           -e XDEBUG_MODE=coverage \
           app sh -c "
@@ -44,11 +43,10 @@ jobs:
             php artisan key:generate && 
             php artisan migrate --force && 
             php artisan test --coverage-clover=coverage.xml &&
-            chmod 666 coverage.xml &&
-            sync
+            sync && chmod 666 coverage.xml
           "
-          # Wait a split second for Docker volume sync to catch up
-          sleep 2
+          # Explicitly wait for the file to appear on the host disk
+          timeout 10s sh -c 'until [ -f coverage.xml ]; do sleep 1; done'
 
       - name: Fix Coverage Paths
         # Removes the Docker path so SonarCloud can find the files in the repo
