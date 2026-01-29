@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Domain\Auth\Entities\SocialAccount;
 use App\Domain\Mfa\Entities\MfaMethod;
+use App\Domain\Programs\Entities\CohortEnrollment;
 use App\Domain\Users\Entities\UserProfile;
 use App\Notifications\VerifyEmailQueued;
 use Database\Factories\UserFactory;
@@ -87,6 +88,11 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         // Use your new queued notification
         $this->notify(new VerifyEmailQueued);
+    }
+
+    public function cohortEnrollments(): HasMany
+    {
+        return $this->hasMany(CohortEnrollment::class);
     }
 
 }
