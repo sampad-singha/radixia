@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api\V1\Program;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateProgramRequest extends FormRequest
 {
@@ -22,10 +23,10 @@ class UpdateProgramRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        return [\
             'title' => 'required|string|max:255',
             'change_slug' => 'required|boolean',
-            'slug' => 'nullable|string|max:255|unique:programs,slug',
+            Rule::unique('programs', 'slug')->ignore($this->route('program')),
             'description' => 'nullable|string',
             'short_description' => 'nullable|string|max:500',
             'level' => 'required|string|in:beginner,intermediate,advanced',

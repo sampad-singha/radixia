@@ -21,7 +21,6 @@ use App\Domain\Programs\Repositories\ModuleRepositoryInterface;
 use App\Domain\Programs\Repositories\ProgramRepositoryInterface;
 use App\Domain\Programs\Services\CohortServiceInterface;
 use Carbon\Carbon;
-use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -93,7 +92,7 @@ readonly class CohortService implements CohortServiceInterface
         return Cache::tags(["cohort_$id", "program_{$cohort->program_id}"])->remember(
             self::CACHE_PREFIX . $id,
             self::CACHE_TTL,
-            fn() => $cohort->load(['program.modules.lessons', 'sessions', 'enrollments'])
+            fn() => $cohort->load(['program.modules.lessons', 'sessions'])
         );
     }
 
@@ -224,7 +223,7 @@ readonly class CohortService implements CohortServiceInterface
         $sessionData = array_merge($data, [
             'cohort_id' => $cohortId,
             'lesson_id' => $lessonId,
-            'meeting_url' => ($cohort->meeting_base_url ?? $this->jitsiBaseUrl) . $roomName,
+            'meeting_url' => ($this->jitsiBaseUrl) . $roomName,
             'status' => 'scheduled'
         ]);
 

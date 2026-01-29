@@ -24,7 +24,7 @@ class UpdateLessonRequest extends FormRequest
     {
         return [
             'title' => 'required|string|max:255',
-            'content' => 'nullable|string',
+            'description' => 'nullable|string',
             'duration_minutes' => 'required|integer|min:1',
         ];
     }

@@ -13,15 +13,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * @property string program_id
- * @property string assigned_instructor_id
- * @property string name
- * @property DateTimeInterface start_date
- * @property DateTimeInterface end_date
- * @property int capacity
- * @property float price
- * @property string status
- */
+* @property string $program_id
+* @property string $assigned_instructor_id
+* @property string $name
+* @property DateTimeInterface $start_date
+* @property DateTimeInterface $end_date
+* @property int $capacity
+* @property float $price
+* @property string $status
+**/
+
 class Cohort extends Model
 {
     /** @use HasFactory<CohortFactory> */

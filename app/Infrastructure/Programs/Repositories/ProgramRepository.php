@@ -7,7 +7,6 @@ use App\Domain\Programs\Entities\Module;
 use App\Domain\Programs\Entities\Program;
 use App\Domain\Programs\Repositories\ProgramRepositoryInterface;
 use Illuminate\Support\Collection;
-use Str;
 
 class ProgramRepository implements ProgramRepositoryInterface
 {
@@ -38,7 +37,7 @@ class ProgramRepository implements ProgramRepositoryInterface
     {
         // We will only return programs that are published and has at least one active or upcoming cohort
         return Program::query()
-            ->where('is_published', true)
+            ->where('status', 'published')
             ->whereHas('cohorts', fn($q) => $q->whereIn('status', ['scheduled', 'active']))
             ->orderBy('created_at', 'desc')
             ->get();

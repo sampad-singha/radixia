@@ -11,13 +11,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * @property string cohort_id
- * @property string lesson_id
- * @property DateTimeInterface starts_at
- * @property DateTimeInterface ends_at
- * @property string meeting_url
- * @property string recording_url
- * @property string status
+ * @property string $cohort_id
+ * @property string $lesson_id
+ * @property DateTimeInterface $starts_at
+ * @property DateTimeInterface $ends_at
+ * @property string $meeting_url
+ * @property string $recording_url
+ * @property string $status
  */
 class CohortSession extends Model
 {

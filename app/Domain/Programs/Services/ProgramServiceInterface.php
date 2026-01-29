@@ -45,4 +45,6 @@ interface ProgramServiceInterface
     public function deleteLesson(string $lessonId): void;
 
     public function reorderLessons(string $moduleId, array $orderedIds): void;
+
+    public function restoreLesson(string $lessonId): Lesson;
 }

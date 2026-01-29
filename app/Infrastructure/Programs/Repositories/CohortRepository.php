@@ -53,8 +53,8 @@ class CohortRepository implements CohortRepositoryInterface
             if ($restored) {
                 // 2. Restore children
                 /** @var HasMany $sessions */
-                $cohort->sessions()->withTrashed()->restore();
-                $cohort->enrollments()->withTrashed()->restore();
+                $cohort->sessions()->withTrashed()->get()->each->restore();
+                $cohort->enrollments()->withTrashed()->get()->each->restore();
             }
 
             return $restored;

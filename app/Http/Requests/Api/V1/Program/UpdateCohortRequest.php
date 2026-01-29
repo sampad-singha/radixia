@@ -16,7 +16,7 @@ class UpdateCohortRequest extends FormRequest
     {
         return [
             'name' => ['sometimes', 'string', 'max:255'],
-            'start_date' => ['sometimes', 'date', 'after_or_equal:today'],
+            'start_date' => ['sometimes', 'date'],
             'end_date' => ['sometimes', 'date', 'after_or_equal:start_date'],
             'status' => ['sometimes', 'string', Rule::in(['scheduled', 'active', 'completed', 'cancelled'])],
             'capacity' => ['sometimes', 'integer', 'min:1'],
