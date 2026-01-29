@@ -33,26 +33,21 @@ jobs:
 
       - name: Run Tests with Coverage
         run: |
+          # Start MySQL and wait for it to be ready
           docker compose up -d --wait mysql
+
+          # Run the test container
+          # --build: Forces Docker to use your updated Dockerfile (with PCOV)
+          # --rm: Cleans up the container after running
           docker compose run --rm --build \
+          -e XDEBUG_MODE=coverage \
           app sh -c "
             git config --global --add safe.directory /var/www/html && 
             composer install --no-interaction --prefer-dist && 
             cp .env.docker .env && 
             php artisan key:generate && 
             php artisan migrate --force && 
-            # 1. Force PCOV enabled via PHP flag
-            # 2. Use vendor/bin/phpunit directly to ensure coverage clover is captured
-            php -d pcov.enabled=1 vendor/bin/phpunit --coverage-clover=coverage.xml && 
-          
-            # 3. Check if file exists before running chmod to avoid the error you just saw
-            if [ -f coverage.xml ]; then
-              sync && chmod 666 coverage.xml;
-            else
-              echo '!!! ERROR: coverage.xml was NOT generated. Check if PCOV is loaded. !!!';
-              php -m | grep pcov; # Debug: check if PCOV is even in the module list
-              exit 1;
-            fi
+            php artisan test --coverage-clover=coverage.xml
           "
 
       - name: Fix Coverage Paths

@@ -23,7 +23,7 @@ class UpdateProgramRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [\
+        return [
             'title' => 'required|string|max:255',
             'change_slug' => 'required|boolean',
             Rule::unique('programs', 'slug')->ignore($this->route('program')),
