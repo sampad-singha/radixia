@@ -33,12 +33,8 @@ jobs:
 
       - name: Run Tests with Coverage
         run: |
-          # Start MySQL and wait for it to be ready
           docker compose up -d --wait mysql
-
-          # Run the test container
-          # --build: Forces Docker to use your updated Dockerfile (with PCOV)
-          # --rm: Cleans up the container after running
+          # Run tests and explicitly ensure the file is written to the host volume
           docker compose run --rm --build \
           -e XDEBUG_MODE=coverage \
           app sh -c "
@@ -47,8 +43,12 @@ jobs:
             cp .env.docker .env && 
             php artisan key:generate && 
             php artisan migrate --force && 
-            php artisan test --coverage-clover=coverage.xml
+            php artisan test --coverage-clover=coverage.xml &&
+            chmod 666 coverage.xml &&
+            sync
           "
+          # Wait a split second for Docker volume sync to catch up
+          sleep 2
 
       - name: Fix Coverage Paths
         # Removes the Docker path so SonarCloud can find the files in the repo
