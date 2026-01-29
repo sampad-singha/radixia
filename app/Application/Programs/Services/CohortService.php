@@ -24,6 +24,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -44,7 +45,12 @@ readonly class CohortService implements CohortServiceInterface
 
     public function listCohortsByProgram(string $programId): Collection
     {
-        return $this->cohortRepository->findByProgram($programId);
+        // Cache the list and tag it
+        return Cache::tags(['cohorts_list', "program_$programId"])->remember(
+            "cohorts_list_program_$programId",
+            self::CACHE_TTL,
+            fn() => $this->cohortRepository->findByProgram($programId)
+        );
     }
 
     /**
@@ -69,7 +75,11 @@ readonly class CohortService implements CohortServiceInterface
             ]);
         }
 
-        return $this->cohortRepository->create($cohortData);
+        $cohort = $this->cohortRepository->create($cohortData);
+
+        $this->clearCohortCache($cohort->id);
+
+        return $cohort;
     }
 
     /**
@@ -77,23 +87,13 @@ readonly class CohortService implements CohortServiceInterface
      */
     public function getCohortDetails(string $id): Cohort
     {
-        return cache()->remember(
+        $cohort = $this->cohortRepository->findById($id);
+        if (!$cohort) throw new CohortNotFoundException();
+
+        return Cache::tags(["cohort_$id", "program_{$cohort->program_id}"])->remember(
             self::CACHE_PREFIX . $id,
             self::CACHE_TTL,
-            function () use ($id) {
-                $cohort = $this->cohortRepository->findById($id);
-
-                if (!$cohort) {
-                    throw new CohortNotFoundException();
-                }
-
-                // Eager load the full content tree
-                return $cohort->load([
-                    'program.modules.lessons',
-                    'sessions',
-                    'enrollments'
-                ]);
-            }
+            fn() => $cohort->load(['program.modules.lessons', 'sessions', 'enrollments'])
         );
     }
 
@@ -186,8 +186,12 @@ readonly class CohortService implements CohortServiceInterface
         return true;
     }
 
+
     /**
-     * @throws Exception
+     * @throws CohortNotFoundException
+     * @throws InvalidModuleException
+     * @throws LessonNotFoundException
+     * @throws ProgramIntegrityException
      */
     public function scheduleSession(string $cohortId, string $lessonId, array $data): CohortSession
     {
@@ -224,40 +228,19 @@ readonly class CohortService implements CohortServiceInterface
             'status' => 'scheduled'
         ]);
 
-        return $this->cohortSessionRepository->create($sessionData);
-    }
+        $session = $this->cohortSessionRepository->create($sessionData);
 
+        $this->clearCohortCache($cohortId);
 
-    public function active(string $cohortId): Cohort
-    {
-        $cohort = $this->cohortRepository->findOrFail($cohortId);
-
-        return $this->cohortRepository->update($cohort, [
-            'status' => 'active',
-        ]);
-    }
-
-
-    public function complete(string $cohortId): Cohort
-    {
-        $cohort = $this->cohortRepository->findOrFail($cohortId);
-
-        return $this->cohortRepository->update($cohort, [
-            'status' => 'completed',
-        ]);
-    }
-
-    public function cancel(string $cohortId): Cohort
-    {
-        $cohort = $this->cohortRepository->findOrFail($cohortId);
-
-        return $this->cohortRepository->update($cohort, [
-            'status' => 'cancelled',
-        ]);
+        return $session;
     }
 
     private function clearCohortCache(string $cohortId): void
     {
-        cache()->forget(self::CACHE_PREFIX . $cohortId);
+        // Clear the specific cohort data
+        Cache::tags(["cohort_$cohortId"])->flush();
+
+        // Also clear the "list" tag if you have a listCohortsByProgram method cached
+        Cache::tags(['cohorts_list'])->flush();
     }
 }

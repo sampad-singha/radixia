@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignUuid('cohort_id')->constrained('cohorts')->cascadeOnDelete();
 
             // Lifecycle & Seat Management
-            $table->string('status')->default('pending'); // pending, active, expired, cancelled
+            $table->enum('status', ['pending', 'active', 'expired', 'cancelled']);
             $table->timestamp('expires_at')->nullable();  // Crucial for the 30-min reservation
             $table->timestamp('activated_at')->nullable(); // When payment was confirmed
 
