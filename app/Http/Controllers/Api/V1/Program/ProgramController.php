@@ -40,18 +40,18 @@ class ProgramController extends Controller
         ]);
     }
 
-    public function getProgramDetails(string $slugOrId)
+    public function getProgramDetails(string $program)
     {
-        $program = $this->programService->getProgramDetails($slugOrId);
+        $program = $this->programService->getProgramDetails($program);
 
         return response()->json([
             'program' => $program,
         ]);
     }
 
-    public function updateProgram(string $id, UpdateProgramRequest $request)
+    public function updateProgram(string $program, UpdateProgramRequest $request)
     {
-        $program = $this->programService->updateProgram($id, $request->validated());
+        $program = $this->programService->updateProgram($program, $request->validated());
 
         return response()->json([
             'message' => 'Program updated successfully.',
@@ -59,9 +59,9 @@ class ProgramController extends Controller
         ]);
     }
 
-    public function archiveProgram(string $id)
+    public function archiveProgram(string $program)
     {
-        $program = $this->programService->archiveProgram($id);
+        $program = $this->programService->archiveProgram($program);
 
         return response()->json([
             'message' => 'Program archived successfully.',
@@ -69,9 +69,9 @@ class ProgramController extends Controller
         ]);
     }
 
-    public function addModuleToProgram(string $programId, CreateModuleRequest $request)
+    public function addModuleToProgram(string $program, CreateModuleRequest $request)
     {
-        $module = $this->programService->addModuleToProgram($programId, $request->validated());
+        $module = $this->programService->addModuleToProgram($program, $request->validated());
 
         return response()->json([
             'message' => 'Module added to program successfully.',
@@ -79,9 +79,9 @@ class ProgramController extends Controller
         ], 201);
     }
 
-    public function updateModule(string $programId,string $moduleId, UpdateModuleRequest $request)
+    public function updateModule(string $module, UpdateModuleRequest $request)
     {
-        $module = $this->programService->updateModule($moduleId, $request->validated());
+        $module = $this->programService->updateModule($module, $request->validated());
 
         return response()->json([
             'message' => 'Module updated successfully.',
@@ -92,9 +92,9 @@ class ProgramController extends Controller
     /**
      * Soft delete a module and its associated lessons.
      */
-    public function deleteModule(string $programId, string $moduleId)
+    public function deleteModule(string $module)
     {
-        $this->programService->deleteModule($moduleId);
+        $this->programService->deleteModule($module);
 
         return response()->json([
             'message' => 'Module and its lessons have been moved to trash.'
@@ -104,9 +104,9 @@ class ProgramController extends Controller
     /**
      * Restore a soft-deleted module and its lessons.
      */
-    public function restoreModule(string $programId, string $moduleId)
+    public function restoreModule(string $module)
     {
-        $module = $this->programService->restoreModule($moduleId);
+        $module = $this->programService->restoreModule($module);
 
         return response()->json([
             'message' => 'Module and its lessons restored successfully.',
@@ -114,16 +114,16 @@ class ProgramController extends Controller
         ]);
     }
 
-    public function reorderModules(ReorderModulesRequest $request, $programId)
+    public function reorderModules(string $program, ReorderModulesRequest $request)
     {
-        $this->programService->reorderModules($programId, $request->validated()['ids']);
+        $this->programService->reorderModules($program, $request->validated()['ids']);
 
         return response()->json(['message' => 'Curriculum updated successfully']);
     }
 
-    public function addLessonToModule(string $programId, string $moduleId, CreateLessonRequest $request)
+    public function addLessonToModule(string $module, CreateLessonRequest $request)
     {
-        $lesson = $this->programService->addLessonToModule($moduleId, $request->validated());
+        $lesson = $this->programService->addLessonToModule($module, $request->validated());
 
         return response()->json([
             'message' => 'Lesson added to module successfully.',
@@ -131,9 +131,9 @@ class ProgramController extends Controller
         ], 201);
     }
 
-    public function updateLesson(string $programId, string $moduleId, string $lessonId, UpdateLessonRequest $request)
+    public function updateLesson(string $lesson, UpdateLessonRequest $request)
     {
-        $lesson = $this->programService->updateLesson($lessonId, $request->validated());
+        $lesson = $this->programService->updateLesson($lesson, $request->validated());
 
         return response()->json([
             'message' => 'Lesson updated successfully.',
@@ -141,9 +141,9 @@ class ProgramController extends Controller
         ]);
     }
 
-    public function deleteLesson($programId, $moduleId, $lessonId)
+    public function deleteLesson(string $lesson)
     {
-        $this->programService->deleteLesson($lessonId);
+        $this->programService->deleteLesson($lesson);
 
         return response()->json(['message' => 'Lesson deleted successfully']);
     }
@@ -151,10 +151,10 @@ class ProgramController extends Controller
     /**
      * @throws LessonNotFoundException
      */
-    public function restoreLesson(string $programId, string $moduleId, string $lessonId)
+    public function restoreLesson(string $lesson)
     {
         // The Service handles the Smart Restore logic (checking index occupancy)
-        $lesson = $this->programService->restoreLesson($lessonId);
+        $lesson = $this->programService->restoreLesson($lesson);
 
         return response()->json([
             'message' => 'Lesson restored successfully.',
@@ -162,9 +162,9 @@ class ProgramController extends Controller
         ]);
     }
 
-    public function reorderLessons($programId, $moduleId, ReorderLessonsRequest $request)
+    public function reorderLessons(string $module, ReorderLessonsRequest $request)
     {
-        $this->programService->reorderLessons($moduleId, $request->validated()['ids']);
+        $this->programService->reorderLessons($module, $request->validated()['ids']);
 
         return response()->json(['message' => 'Lessons reordered successfully']);
     }
