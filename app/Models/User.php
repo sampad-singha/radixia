@@ -17,11 +17,14 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens, TwoFactorAuthenticatable, HasUuids;
+    use HasFactory, Notifiable, HasApiTokens, TwoFactorAuthenticatable, HasUuids, HasRoles;
+
+    protected string $guard_name = 'api';
 
     /**
      * The attributes that are mass assignable.

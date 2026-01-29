@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Domain\Users\Entities\UserProfile;
+use App\Infrastructure\Authorization\PermissionRegistrar;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -17,6 +18,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        PermissionRegistrar::sync();
         $name = 'John Doe';
         $avatarUrl = 'https://api.dicebear.com/9.x/shapes/svg?seed=' . urlencode($name);
 
