@@ -26,6 +26,9 @@ final class RolePermissionMap
              * No wildcards here to avoid privilege creep.
              */
             'instructor' => [
+                'program.create',
+                'module.create',
+                'lesson.create',
                 'session.manage',
                 'session.upload_recording',
                 'cohort.view_roster',

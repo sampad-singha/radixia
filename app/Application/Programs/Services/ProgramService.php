@@ -27,6 +27,18 @@ readonly class ProgramService implements ProgramServiceInterface
 
     // --- Program CRUD ---
 
+    /**
+     * @throws ProgramNotFoundException
+     */
+    public function getProgramById(string $id): ?Program
+    {
+        $program =  $this->programRepository->findById($id);
+        if(!$program) {
+            throw new ProgramNotFoundException();
+        }
+        return $program;
+    }
+
     public function listPublishedPrograms(): Collection
     {
         // Marketplace list usually changes when any program is created/archived
@@ -62,16 +74,8 @@ readonly class ProgramService implements ProgramServiceInterface
         return $program;
     }
 
-    /**
-     * @throws ProgramNotFoundException
-     */
-    public function updateProgram(string $id, array $data): Program
+    public function updateProgram(Program $program, array $data): Program
     {
-        $program = $this->programRepository->findById($id);
-        if (!$program)
-        {
-            throw new ProgramNotFoundException();
-        }
         $changeSlug = $data['change_slug'] ?? false;
 
         //Generate slug if not provided
@@ -88,65 +92,53 @@ readonly class ProgramService implements ProgramServiceInterface
         $updated = $this->programRepository->update($program, $data);
 
         // Invalidate both the list and the specific program cache
-        $this->clearProgramCache($id, $updated->slug);
+        $this->clearProgramCache($updated->id, $updated->slug);
         return $updated;
     }
 
     /**
-     * @throws ProgramNotFoundException
      * @throws ActiveCohortsException
      */
-    public function archiveProgram(string $id): Program
+    public function archiveProgram(Program $program): Program
     {
-        $program = $this->programRepository->findById($id);
-        if (!$program) {
-            throw new ProgramNotFoundException();
-        }
-
-        $hasActiveCohorts = $this->programRepository->hasActiveCohorts($id);
+        $hasActiveCohorts = $this->programRepository->hasActiveCohorts($program->id);
         if ($hasActiveCohorts) {
             throw new ActiveCohortsException();
         }
 
         $updated = $this->programRepository->update($program, ['status' => 'archived']);
 
-        $this->clearProgramCache($id, $updated->slug);
+        $this->clearProgramCache($program->id, $updated->slug);
         return $updated;
     }
 
     // --- Module CRUD ---
 
     /**
-     * @throws ProgramNotFoundException
+     * @throws ModuleNotFoundException
      */
-    public function addModuleToProgram(string $programId, array $data): Module
+    public function findModuleById(string $id): ?Module
     {
-        $program = $this->programRepository->findById($programId);
-        if (!$program)
-        {
-            throw new ProgramNotFoundException();
+        $module = $this->moduleRepository->findWithTrashed($id);
+        if(!$module) {
+            throw new ModuleNotFoundException();
         }
-
-        $maxIndex = $this->programRepository->getModuleMaxIndex($programId);
-        $data['program_id'] = $programId;
-        $data['order_index'] = $maxIndex + 1;
-        $module = $this->moduleRepository->create($data);
-
-        $this->clearProgramCache($programId, $program->slug);
         return $module;
     }
 
-    /**
-     * @throws ModuleNotFoundException
-     */
-    public function updateModule(string $moduleId, array $data): Module
+    public function addModuleToProgram(Program $program, array $data): Module
     {
-        $module = $this->moduleRepository->findById($moduleId);
-        if (!$module)
-        {
-            throw new ModuleNotFoundException();
-        }
+        $maxIndex = $this->programRepository->getModuleMaxIndex($program->id);
+        $data['program_id'] = $program->id;
+        $data['order_index'] = $maxIndex + 1;
+        $module = $this->moduleRepository->create($data);
 
+        $this->clearProgramCache($program->id, $program->slug);
+        return $module;
+    }
+
+    public function updateModule(Module $module, array $data): Module
+    {
         $updated = $this->moduleRepository->update($module, $data);
 
         // Find parent program to clear cache
@@ -154,16 +146,10 @@ readonly class ProgramService implements ProgramServiceInterface
         return $updated;
     }
 
-    /**
-     * @throws ModuleNotFoundException
-     */
-    public function deleteModule(string $moduleId): void
+    public function deleteModule(Module $module): void
     {
-        $module = $this->moduleRepository->findById($moduleId);
-        if (!$module) throw new ModuleNotFoundException();
-
         // 1. Fetch all active lessons belonging to this module
-        $lessons = $this->lessonRepository->findByModule($moduleId);
+        $lessons = $this->lessonRepository->findByModule($module->id);
 
         // 2. Loop and delete using existing repository logic
         // This ensures any logic in your delete() method is respected
@@ -177,16 +163,10 @@ readonly class ProgramService implements ProgramServiceInterface
         $this->clearProgramCache($module->program_id);
     }
 
-    /**
-     * @throws ModuleNotFoundException
-     */
-    public function restoreModule(string $moduleId): Module
+    public function restoreModule(Module $module): Module
     {
-        $module = $this->moduleRepository->findWithTrashed($moduleId);
-        if (!$module) throw new ModuleNotFoundException();
-
         // 1. Fetch all trashed lessons for this module
-        $trashedLessons = $this->lessonRepository->getTrashedByModuleId($moduleId);
+        $trashedLessons = $this->lessonRepository->getTrashedByModuleId($module->id);
 
         // 2. Loop and restore
         foreach ($trashedLessons as $lesson) {
@@ -213,7 +193,7 @@ readonly class ProgramService implements ProgramServiceInterface
     /**
      * @throws Throwable
      */
-    public function reorderModules(string $programId, array $orderedIds): void
+    public function reorderModules(Program $program, array $orderedIds): void
     {
         DB::transaction(function () use ($orderedIds) {
             foreach ($orderedIds as $position => $id) {
@@ -221,24 +201,28 @@ readonly class ProgramService implements ProgramServiceInterface
             }
         });
 
-        $this->clearProgramCache($programId);
+        $this->clearProgramCache($program->id);
     }
 
     // --- Lesson CRUD ---
 
     /**
-     * @throws ModuleNotFoundException
+     * @throws LessonNotFoundException
      */
-    public function addLessonToModule(string $moduleId, array $data): Lesson
+    public function findLessonById(string $id): ?Lesson
     {
-        $module = $this->moduleRepository->findById($moduleId);
-        if (!$module)
+        $lesson = $this->lessonRepository->findWithTrashed($id);
+        if(!$lesson)
         {
-            throw new ModuleNotFoundException();
+            throw new LessonNotFoundException();
         }
+        return $lesson;
+    }
 
-        $maxIndex = $this->moduleRepository->getLessonMaxIndex($moduleId);
-        $data['module_id'] = $moduleId;
+    public function addLessonToModule(Module $module, array $data): Lesson
+    {
+        $maxIndex = $this->moduleRepository->getLessonMaxIndex($module->id);
+        $data['module_id'] = $module->id;
         $data['order_index'] = $maxIndex + 1;
         $lesson = $this->lessonRepository->create($data);
 
@@ -246,33 +230,16 @@ readonly class ProgramService implements ProgramServiceInterface
         return $lesson;
     }
 
-    /**
-     * @throws LessonNotFoundException
-     */
-    public function updateLesson(string $lessonId, array $data): Lesson
+    public function updateLesson(Lesson $lesson, array $data): Lesson
     {
-        $lesson = $this->lessonRepository->findById($lessonId);
-        if(!$lesson)
-        {
-            throw new LessonNotFoundException();
-        }
         $updated = $this->lessonRepository->update($lesson, $data);
 
         $this->clearProgramCache($updated->module->program_id);
         return $updated;
     }
 
-    /**
-     * @throws LessonNotFoundException
-     */
-    public function deleteLesson(string $lessonId): void
+    public function deleteLesson(Lesson $lesson): void
     {
-        $lesson = $this->lessonRepository->findById($lessonId);
-        if (!$lesson)
-        {
-            throw new LessonNotFoundException();
-        }
-
         // Get parent ID before deleting to clear cache
         $module = $this->moduleRepository->findById($lesson->module_id);
 
@@ -286,7 +253,7 @@ readonly class ProgramService implements ProgramServiceInterface
     /**
      * @throws Throwable
      */
-    public function reorderLessons(string $moduleId, array $orderedIds): void
+    public function reorderLessons(Module $module, array $orderedIds): void
     {
         DB::transaction(function () use ($orderedIds) {
             foreach ($orderedIds as $position => $id) {
@@ -294,22 +261,11 @@ readonly class ProgramService implements ProgramServiceInterface
             }
         });
 
-        $module = $this->moduleRepository->findById($moduleId);
-
         $this->clearProgramCache($module->program_id);
     }
 
-    /**
-     * @throws LessonNotFoundException
-     */
-    public function restoreLesson(string $lessonId): Lesson
+    public function restoreLesson(Lesson $lesson): Lesson
     {
-        $lesson = $this->lessonRepository->findWithTrashed($lessonId);
-
-        if (!$lesson) {
-            throw new LessonNotFoundException();
-        }
-
         // 1. Check if the original spot is taken by a live lesson
         $isSpotTaken = $this->lessonRepository->isIndexOccupied(
             $lesson->module_id,

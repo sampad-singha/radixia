@@ -27,5 +27,7 @@ final class PermissionRegistrar
 
             $roleModel->syncPermissions($permissionModels);
         }
+
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
     }
 }

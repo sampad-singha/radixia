@@ -5,6 +5,7 @@ namespace App\Infrastructure\Programs\Repositories;
 use App\Domain\Programs\Entities\Cohort;
 use App\Domain\Programs\Entities\Module;
 use App\Domain\Programs\Entities\Program;
+use App\Domain\Programs\Exceptions\ProgramNotFoundException;
 use App\Domain\Programs\Repositories\ProgramRepositoryInterface;
 use Illuminate\Support\Collection;
 
@@ -38,7 +39,6 @@ class ProgramRepository implements ProgramRepositoryInterface
         // We will only return programs that are published and has at least one active or upcoming cohort
         return Program::query()
             ->where('status', 'published')
-            ->whereHas('cohorts', fn($q) => $q->whereIn('status', ['scheduled', 'active']))
             ->orderBy('created_at', 'desc')
             ->get();
     }

@@ -31,6 +31,8 @@ class DatabaseSeeder extends Seeder
             'is_password_set' => true,
         ]);
 
+        $user->assignRole('instructor');
+
         // 2. Create an empty Profile for him
         UserProfile::create([
             'user_id' => $user->id,
