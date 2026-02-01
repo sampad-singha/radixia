@@ -14,5 +14,4 @@ interface CohortServiceInterface
     public function updateCohort(string $cohortId, array $data): Cohort;
     public function deleteCohort(string $id): bool;
     public function restoreCohort(string $id): bool;
-    public function scheduleSession(string $cohortId, string $lessonId, array $data): CohortSession;
 }

@@ -49,10 +49,11 @@ return new class extends Migration
             $table->dateTime('ends_at');
 
             // Meeting Details
-            $table->string('meeting_url')->nullable();
+            $table->string('room_id')->nullable();
             $table->string('recording_url')->nullable();
 
-            $table->enum('status', ['scheduled', 'live', 'completed', 'cancelled'])->default('scheduled');
+            $table->enum('status', ['scheduled', 'completed', 'cancelled'])->default('scheduled');
+            $table->text('cancellation_reason')->nullable();
 
             $table->timestamps();
             $table->softDeletes();

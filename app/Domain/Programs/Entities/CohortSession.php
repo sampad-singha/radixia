@@ -2,6 +2,7 @@
 
 namespace App\Domain\Programs\Entities;
 
+use App\Domain\Programs\Enums\SessionStatus;
 use Database\Factories\LessonFactory;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -11,13 +12,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
+ * @property string $id
  * @property string $cohort_id
  * @property string $lesson_id
  * @property DateTimeInterface $starts_at
  * @property DateTimeInterface $ends_at
- * @property string $meeting_url
+ * @property string $room_id
  * @property string $recording_url
- * @property string $status
+ * @property SessionStatus $status
+ * @property Cohort $cohort
+ * @property Lesson $lesson
  */
 class CohortSession extends Model
 {
@@ -28,7 +32,7 @@ class CohortSession extends Model
         'lesson_id',
         'starts_at',
         'ends_at',
-        'meeting_url',
+        'room_id',
         'recording_url',
         'status'
     ];
@@ -36,7 +40,13 @@ class CohortSession extends Model
     protected $casts = [
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
+        'status' => SessionStatus::class,
     ];
+
+    public function isCancelled(): bool
+    {
+        return $this->status === SessionStatus::CANCELLED;
+    }
 
     public function cohort(): BelongsTo
     {

@@ -98,4 +98,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(CohortEnrollment::class);
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    public function isInstructor(): bool
+    {
+        return $this->hasRole('instructor');
+    }
+
 }

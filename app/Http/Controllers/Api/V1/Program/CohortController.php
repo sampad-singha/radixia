@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers\Api\V1\Program;
 
-use App\Domain\Programs\Exceptions\CohortNotEmptyException;
-use App\Domain\Programs\Exceptions\RestrictedStatusException;
 use App\Domain\Programs\Services\CohortServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Program\CreateCohortRequest;
@@ -59,9 +57,7 @@ class CohortController extends Controller
     }
 
     /**
-     * @throws CohortNotEmptyException
      * @throws Throwable
-     * @throws RestrictedStatusException
      */
     public function deleteCohort(string $id)
     {

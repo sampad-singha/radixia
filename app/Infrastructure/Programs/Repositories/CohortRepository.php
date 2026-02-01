@@ -3,6 +3,7 @@
 namespace App\Infrastructure\Programs\Repositories;
 
 use App\Domain\Programs\Entities\Cohort;
+use App\Domain\Programs\Enums\CohortStatus;
 use App\Domain\Programs\Repositories\CohortRepositoryInterface;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
@@ -77,7 +78,7 @@ class CohortRepository implements CohortRepositoryInterface
     {
         return Cohort::query()
             ->where('program_id', $programId)
-            ->whereNot('status', 'cancelled')
+            ->whereNot('status', CohortStatus::CANCELLED)
             ->orderBy('start_date', 'desc')
             ->get();
     }
@@ -87,8 +88,17 @@ class CohortRepository implements CohortRepositoryInterface
     {
         return Cohort::query()
             ->where('program_id', $programId)
-            ->whereIn('status', ['scheduled', 'active'])
+            ->whereIn('status', [CohortStatus::SCHEDULED, CohortStatus::ACTIVE])
             ->orderBy('start_date', 'desc')
             ->get();
+    }
+
+    public function isUserEnrolled(string $cohortId, string $userId): bool
+    {
+        return DB::table('cohort_enrollments')
+            ->where('cohort_id', $cohortId)
+            ->where('user_id', $userId)
+            ->where('status', CohortStatus::ACTIVE)
+            ->exists();
     }
 }
