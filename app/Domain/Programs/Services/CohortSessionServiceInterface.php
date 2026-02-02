@@ -21,7 +21,8 @@ interface CohortSessionServiceInterface
 
     // Access
     public function canJoin(CohortSession $session, User $user): bool;
-    public function getJoinLink(CohortSession $session, User $user): string;
+//    public function getJoinLink(CohortSession $session, User $user): string;
+    public function getMeetingDetails(CohortSession $session, User $user): array;
 
     // Post-class
 //    public function attachRecording(CohortSession $session, string $videoId): CohortSession;

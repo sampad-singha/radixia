@@ -7,6 +7,7 @@ use App\Domain\Programs\Enums\SessionStatus;
 use App\Domain\Programs\Exceptions\CohortSessionNotFoundException;
 use App\Domain\Programs\Exceptions\ImmutableFieldException;
 use App\Domain\Programs\Exceptions\InvalidSessionTimeException;
+use App\Domain\Programs\Exceptions\MeetingAccessRestrictedException;
 use App\Domain\Programs\Exceptions\RestrictedStatusException;
 use App\Domain\Programs\Repositories\CohortRepositoryInterface;
 use App\Domain\Programs\Repositories\CohortSessionRepositoryInterface;
@@ -166,22 +167,25 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
     }
 
 
+    /**
+     * @throws MeetingAccessRestrictedException
+     */
     public function canJoin(CohortSession $session, User $user): bool
     {
         if ($session->isCancelled()) {
-            return false;
+            throw new MeetingAccessRestrictedException('Session has been cancelled.');
         }
 
         $status = $this->resolveStatus($session);
 
         if (!in_array($status, [SessionStatus::LIVE, SessionStatus::SCHEDULED,], true)) {
-            return false;
+            throw new MeetingAccessRestrictedException('Session is not live or scheduled.');
         }
 
         $joinWindowStart = $session->starts_at->copy()->subMinutes(15);
 
         if (now()->lt($joinWindowStart)) {
-            return false;
+            throw new MeetingAccessRestrictedException('Joining is not allowed yet.');
         }
 
         if ($user->isAdmin()) {
@@ -196,32 +200,55 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
     }
 
     /**
-     * @throws RestrictedStatusException
+     * @throws MeetingAccessRestrictedException
      */
-    public function getJoinLink(CohortSession $session, User $user): string
+//    public function getJoinLink(CohortSession $session, User $user): string
+//    {
+//        if (!$this->canJoin($session, $user)) {
+//            throw new MeetingAccessRestrictedException();
+//        }
+//
+//        $title = sprintf(
+//            '%s – %s',
+//            $session->cohort->name,
+//            $session->lesson->title
+//        );
+//
+//        $isModerator = $this->isModerator($session, $user);
+//
+//        $ttlSeconds = $this->calculateJoinTtlSeconds($session);
+//
+//        return $this->meetService->generateJoinUrl(
+//            roomId: $session->room_id,
+//            userId: (string)$user->id,
+//            displayName: $user->name,
+//            isModerator: $isModerator,
+//            ttlSeconds: $ttlSeconds,
+//            subject: $title
+//        );
+//    }
+    public function getMeetingDetails(CohortSession $session, User $user): array
     {
         if (!$this->canJoin($session, $user)) {
-            throw new RestrictedStatusException('join_not_allowed');
+            throw new MeetingAccessRestrictedException();
         }
 
-        $title = sprintf(
-            '%s – %s',
-            $session->cohort->name,
-            $session->lesson->title
-        );
-
         $isModerator = $this->isModerator($session, $user);
-
         $ttlSeconds = $this->calculateJoinTtlSeconds($session);
 
-        return $this->meetService->generateJoinUrl(
+        // Call the NEW array-based method you added
+        $data = $this->meetService->getMeetingData(
             roomId: $session->room_id,
             userId: (string)$user->id,
             displayName: $user->name,
             isModerator: $isModerator,
-            ttlSeconds: $ttlSeconds,
-            subject: $title
+            ttlSeconds: $ttlSeconds
         );
+
+        // Add the subject here so JS can use it easily
+        $data['subject'] = sprintf('%s – %s', $session->cohort->name, $session->lesson->title);
+
+        return $data;
     }
 
     public function resolveStatus(CohortSession $session): SessionStatus
@@ -272,7 +299,8 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
         $secondsUntilEnd = $now->diffInSeconds($session->ends_at);
 
         // Add 30 minutes buffer
-        return $secondsUntilEnd + (30 * 60);
+//        return $secondsUntilEnd + (30 * 60);
+        return $secondsUntilEnd;
     }
 
 }

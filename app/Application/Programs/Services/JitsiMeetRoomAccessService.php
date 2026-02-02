@@ -50,11 +50,11 @@ class JitsiMeetRoomAccessService implements MeetRoomAccessServiceInterface
                 'user' => [
                     'id' => $userId,
                     'name' => $displayName,
-                    'affiliation' => $isModerator ? 'owner' : 'member',
+                    'moderator' => $isModerator ? 'true' : 'false',
                 ],
                 'features' => [
-                    'recording' => true,
-                    'livestreaming' => true,
+                    'recording' => $isModerator,
+                    'livestreaming' => $isModerator,
                     'transcription' => true,
                 ]
             ],
@@ -66,5 +66,14 @@ class JitsiMeetRoomAccessService implements MeetRoomAccessServiceInterface
             'RS256',
             config('jitsi.api_key_id')
         );
+    }
+
+    public function getMeetingData(string $roomId, string $userId, string $displayName, bool $isModerator, int $ttlSeconds): array
+    {
+        return [
+            'jwt'    => $this->generateJwt($roomId, $userId, $displayName, $isModerator, $ttlSeconds),
+            'room'   => $roomId,
+            'appId'  => config('jitsi.app_id'),
+        ];
     }
 }

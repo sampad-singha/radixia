@@ -71,19 +71,33 @@ class CohortSessionController extends Controller
         ]);
     }
 
+//    public function join(string $id)
+//    {
+//        $session = $this->sessionService->getById($id);
+//
+//        $joinUrl = $this->sessionService->getJoinLink(
+//            $session,
+//            Auth::user()
+//        );
+//
+//        return response()->json([
+//            'data' => [
+//                'join_url' => $joinUrl,
+//            ],
+//        ]);
+//    }
     public function join(string $id)
     {
         $session = $this->sessionService->getById($id);
 
-        $joinUrl = $this->sessionService->getJoinLink(
+        // Now returns an array of data, not a string
+        $meetingData = $this->sessionService->getMeetingDetails(
             $session,
             Auth::user()
         );
 
         return response()->json([
-            'data' => [
-                'join_url' => $joinUrl,
-            ],
+            'data' => $meetingData
         ]);
     }
 
