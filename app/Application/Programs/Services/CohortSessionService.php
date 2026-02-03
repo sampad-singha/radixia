@@ -299,8 +299,7 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
         $secondsUntilEnd = $now->diffInSeconds($session->ends_at);
 
         // Add 30 minutes buffer
-//        return $secondsUntilEnd + (30 * 60);
-        return $secondsUntilEnd;
+        return $secondsUntilEnd + (30 * 60);
     }
 
 }

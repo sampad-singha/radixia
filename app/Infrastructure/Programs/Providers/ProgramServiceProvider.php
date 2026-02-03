@@ -7,6 +7,8 @@ use App\Application\Programs\Services\CohortService;
 use App\Application\Programs\Services\CohortSessionService;
 use App\Application\Programs\Services\JitsiMeetRoomAccessService;
 use App\Application\Programs\Services\ProgramService;
+use App\Domain\Programs\Entities\Cohort;
+use App\Domain\Programs\Entities\CohortSession;
 use App\Domain\Programs\Entities\Lesson;
 use App\Domain\Programs\Entities\Module;
 use App\Domain\Programs\Entities\Program;
@@ -27,6 +29,8 @@ use App\Infrastructure\Programs\Repositories\CohortSessionRepository;
 use App\Infrastructure\Programs\Repositories\LessonRepository;
 use App\Infrastructure\Programs\Repositories\ModuleRepository;
 use App\Infrastructure\Programs\Repositories\ProgramRepository;
+use App\Policies\Program\CohortPolicy;
+use App\Policies\Program\CohortSessionPolicy;
 use App\Policies\Program\LessonPolicy;
 use App\Policies\Program\ModulePolicy;
 use App\Policies\Program\ProgramPolicy;
@@ -68,5 +72,7 @@ class ProgramServiceProvider extends ServiceProvider
         Gate::policy(Program::class, ProgramPolicy::class);
         Gate::policy(Module::class, ModulePolicy::class);
         Gate::policy(Lesson::class, LessonPolicy::class);
+        Gate::policy(Cohort::class, CohortPolicy::class);
+        Gate::policy(CohortSession::class, CohortSessionPolicy::class);
     }
 }

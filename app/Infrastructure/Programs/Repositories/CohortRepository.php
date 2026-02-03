@@ -42,12 +42,9 @@ class CohortRepository implements CohortRepositoryInterface
     /**
      * @throws Throwable
      */
-    public function restore(string $id): bool
+    public function restore(Cohort $cohort): bool
     {
-        return DB::transaction(function () use ($id) {
-            // We must use withTrashed() to find the record
-            $cohort = Cohort::withTrashed()->findOrFail($id);
-
+        return DB::transaction(function () use ($cohort) {
             // 1. Restore the parent
             $restored = $cohort->restore();
 
@@ -66,6 +63,13 @@ class CohortRepository implements CohortRepositoryInterface
     public function findById(string $id): ?Cohort
     {
         return Cohort::query()->find($id);
+    }
+
+    public function findWithTrashed(string $id): ?Cohort
+    {
+        /** @var Cohort|null $cohort */
+        $cohort = Cohort::withTrashed()->find($id);
+        return $cohort;
     }
 
     public function findOrFail(string $id): Cohort

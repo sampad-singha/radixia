@@ -13,7 +13,7 @@ interface CohortRepositoryInterface
 
     public function delete(Cohort $cohort): bool;
 
-    public function restore(string $id): bool;
+    public function restore(Cohort $cohort): bool;
 
     public function findById(string $id): ?Cohort;
 
@@ -22,4 +22,6 @@ interface CohortRepositoryInterface
     public function findActiveByProgram(string $programId): Collection;
 
     public function isUserEnrolled(string $cohortId, string $userId): bool;
+
+    public function findWithTrashed(string $id): ?Cohort;
 }

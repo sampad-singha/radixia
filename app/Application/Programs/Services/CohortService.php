@@ -31,6 +31,30 @@ readonly class CohortService implements CohortServiceInterface
         private ProgramRepositoryInterface $programRepository
     ) {}
 
+    /**
+     * @throws CohortNotFoundException
+     */
+    public function findCohortById(string $id): Cohort
+    {
+        $cohort = $this->cohortRepository->findById($id);
+        if(!$cohort) {
+            throw new CohortNotFoundException();
+        }
+        return $cohort;
+    }
+
+    /**
+     * @throws CohortNotFoundException
+     */
+    public function findCohortWithTrashed(string $id): Cohort
+    {
+        $cohort = $this->cohortRepository->findWithTrashed($id);
+        if(!$cohort) {
+            throw new CohortNotFoundException();
+        }
+        return $cohort;
+    }
+
     public function listCohortsByProgram(string $programId): Collection
     {
         // Cache the list and tag it
@@ -89,17 +113,15 @@ readonly class CohortService implements CohortServiceInterface
      * @throws FieldRestrictedException
      * @throws CohortUpdateException
      */
-    public function updateCohort(string $cohortId, array $data): Cohort
+    public function updateCohort(Cohort $cohort, array $data): Cohort
     {
-        $cohort = $this->cohortRepository->findOrFail($cohortId);
-
         // 1. Prevent updates to Completed or Cancelled cohorts
         if (in_array($cohort->status, [CohortStatus::COMPLETED, CohortStatus::CANCELLED,])) {
             throw new RestrictedStatusException($cohort->status->value);
         }
 
         // 2. Prevent critical changes if students are already enrolled
-        $activeAndReservedCount = $this->cohortEnrollmentRepository->countActiveAndReserved($cohortId);
+        $activeAndReservedCount = $this->cohortEnrollmentRepository->countActiveAndReserved($cohort->id);
 
         if ($activeAndReservedCount > 0) {
             // Field Restrictions (Price/Program)
@@ -128,7 +150,7 @@ readonly class CohortService implements CohortServiceInterface
 
         $updatedCohort = $this->cohortRepository->update($cohort, $data);
 
-        $this->clearCohortCache($cohortId);
+        $this->clearCohortCache($cohort->id);
 
         return $updatedCohort;
     }
@@ -138,11 +160,9 @@ readonly class CohortService implements CohortServiceInterface
      * @throws CohortNotEmptyException
      * @throws Throwable
      */
-    public function deleteCohort(string $id): bool
+    public function deleteCohort(Cohort $cohort): bool
     {
-        $cohort = $this->cohortRepository->findOrFail($id);
-
-        $occupiedSeats = $this->cohortEnrollmentRepository->countActiveAndReserved($id);
+        $occupiedSeats = $this->cohortEnrollmentRepository->countActiveAndReserved($cohort->id);
         if ($occupiedSeats > 0) {
             throw new CohortNotEmptyException($occupiedSeats);
         }
@@ -153,7 +173,7 @@ readonly class CohortService implements CohortServiceInterface
 
         $deleted = $this->cohortRepository->delete($cohort);
 
-        $this->clearCohortCache($id);
+        $this->clearCohortCache($cohort->id);
 
         return $deleted;
     }
@@ -161,63 +181,14 @@ readonly class CohortService implements CohortServiceInterface
     /**
      * @throws Throwable
      */
-    public function restoreCohort(string $id): bool
+    public function restoreCohort(Cohort $cohort): bool
     {
-        $this->cohortRepository->restore($id);
+        $this->cohortRepository->restore($cohort);
 
-        $this->clearCohortCache($id);
+        $this->clearCohortCache($cohort->id);
 
         return true;
     }
-
-
-//    /**
-//     * @throws CohortNotFoundException
-//     * @throws InvalidModuleException
-//     * @throws LessonNotFoundException
-//     * @throws ProgramIntegrityException
-//     */
-//    public function scheduleSession(string $cohortId, string $lessonId, array $data): CohortSession
-//    {
-//        // 1. Fetch the Cohort
-//        $cohort = $this->cohortRepository->findById($cohortId);
-//        if (!$cohort) {
-//            throw new CohortNotFoundException();
-//        }
-//
-//        // 2. Fetch the Lesson
-//        $lesson = $this->lessonRepository->findById($lessonId);
-//        if (!$lesson) {
-//            throw new LessonNotFoundException("Cannot schedule session: Lesson [$lessonId] not found.");
-//        }
-//
-//        // 3. Fetch the Module to get the Program ID
-//        $module = $this->moduleRepository->findById($lesson->module_id);
-//        if (!$module) {
-//            throw new InvalidModuleException("Corrupt data: Lesson has no valid module.");
-//        }
-//
-//        // 4. THE INTEGRITY CHECK
-//        // Compare the Lesson's Program ID with the Cohort's Program ID
-//        if ($module->program_id !== $cohort->program_id) {
-//            throw new ProgramIntegrityException("Lesson does not belong to the Program associated with this Cohort.");
-//        }
-//
-//        $roomName = 'Radixia-' . Str::slug($cohort->name) . '-' . Str::random(10);
-//
-//        $sessionData = array_merge($data, [
-//            'cohort_id' => $cohortId,
-//            'lesson_id' => $lessonId,
-//            'meeting_url' => ($this->jitsiBaseUrl) . $roomName,
-//            'status' => 'scheduled'
-//        ]);
-//
-//        $session = $this->cohortSessionRepository->create($sessionData);
-//
-//        $this->clearCohortCache($cohortId);
-//
-//        return $session;
-//    }
 
     private function clearCohortCache(string $cohortId): void
     {

@@ -15,7 +15,7 @@ final class RolePermissionMap
             'admin' => [
                 'program.*',
                 'cohort.*',
-                'session.*',
+                'cohortSession.*',
                 'order.*',
                 'user.*',
                 'certificate.*',
@@ -29,8 +29,9 @@ final class RolePermissionMap
                 'program.create',
                 'module.create',
                 'lesson.create',
-                'session.manage',
-                'session.upload_recording',
+                'cohortSession.manage',
+                'cohortSession.join',
+                'cohortSession.upload_recording',
                 'cohort.view_roster',
             ],
 

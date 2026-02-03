@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
+* @property string $id
 * @property string $program_id
 * @property string $assigned_instructor_id
 * @property string $name

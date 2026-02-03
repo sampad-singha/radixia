@@ -172,7 +172,7 @@
     const jitsiContainer = document.getElementById('jaas-container');
     const errorMsg = document.getElementById('error-msg');
 
-    const sessionId = "019c1dc3-1f40-725b-a0dd-7a4e1dd37227";
+    const sessionId = "019c22dd-dd9c-717c-8675-7d56d22ce575";
     const BASE_URL = 'http://127.0.0.1:8000';
 
     btn.addEventListener('click', () => {
@@ -182,16 +182,22 @@
         fetch(`${BASE_URL}/api/v1/cohort-sessions/${sessionId}/join`, {
             method: 'POST',
             headers: {
-                'Authorization': 'Bearer YOUR_API_TOKEN',
+                'Authorization': 'Bearer 14|2SKUWZeG65Ay3xuhGshTBrQiTg5XlPKlyony1UBY314232cc',
                 'Accept': 'application/json'
             }
         })
-            .then(response => response.json())
+            .then(async response => {
+                if (!response.ok) {
+                    const error = await response.json().catch(() => null);
+                    throw new Error(error?.message || "Failed to join");
+                }
+                return response.json();
+            })
             .then(res => {
                 const meetingData = res.data;
-
                 welcomeUi.style.display = 'none';
 
+                // instantiate Jitsi API
                 const api = new JitsiMeetExternalAPI("8x8.vc", {
                     roomName: `${meetingData.appId}/${meetingData.room}`,
                     parentNode: jitsiContainer,
@@ -205,30 +211,42 @@
                         disableInviteFunctions: true,
                         enableEndConference: true,
                         buttonsWithConfirmation: ['hangup'],
-
-                        // ADDED MISSING OPTIONS HERE:
                         toolbarButtons: [
                             'microphone', 'camera', 'desktop', 'participants-pane',
                             'chat', 'raisehand', 'videoquality', 'fullscreen',
-                            'settings', 'tileview', 'download', 'help', 'mute-everyone',
-                            'mute-video-everyone', 'security', 'hangup'
+                            'settings', 'tileview', 'download', 'help', 'hangup'
                         ],
-                        // This ensures buttons don't disappear into the "..." menu too early
                         toolbarConfig: {
                             initialTimeout: 20000,
                             alwaysVisible: false
                         }
                     },
                     interfaceConfigOverwrite: {
-                        // Force the filmstrip to be on the right to save vertical space
                         VERTICAL_FILMSTRIP: true,
                     }
                 });
+
+                // OPTIONAL: Track participants (for later kick logic)
+                let participants = [];
+
+                api.addEventListener('participantJoined', ({ id }) => {
+                    if (!participants.includes(id)) {
+                        participants.push(id);
+                    }
+                });
+
+                api.addEventListener('participantLeft', ({ id }) => {
+                    participants = participants.filter(pid => pid !== id);
+                });
+
+                // You *cannot* do a kick unless you're a moderator
+                // If you *were* a moderator you'd do:
+                // participants.forEach(pid => api.executeCommand('kickParticipant', pid));
             })
             .catch(err => {
                 btn.disabled = false;
                 btn.innerText = "Join Classroom";
-                errorMsg.innerText = "Failed to connect. Is your API running?";
+                errorMsg.innerText = err.message;
             });
     });
 </script>

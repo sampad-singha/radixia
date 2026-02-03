@@ -74,6 +74,7 @@ class JitsiMeetRoomAccessService implements MeetRoomAccessServiceInterface
             'jwt'    => $this->generateJwt($roomId, $userId, $displayName, $isModerator, $ttlSeconds),
             'room'   => $roomId,
             'appId'  => config('jitsi.app_id'),
+            'is_moderator' => $isModerator,
         ];
     }
 }
