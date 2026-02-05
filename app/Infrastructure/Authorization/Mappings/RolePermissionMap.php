@@ -29,8 +29,8 @@ final class RolePermissionMap
                 'program.create',
                 'module.create',
                 'lesson.create',
-                'cohortSession.manage',
-                'cohortSession.join',
+                'cohort.create',
+                'cohortSession.create',
                 'cohortSession.upload_recording',
                 'cohort.view_roster',
             ],
@@ -38,10 +38,11 @@ final class RolePermissionMap
             /*
              * Students have read-only, narrow permissions.
              */
-            'student' => [
-                'cohort.view',
-                'course.view',
-            ],
+//            'student' => [
+//                'cohort.view',
+//                'course.view',
+//                'cohortSession.join',
+//            ],
         ];
     }
 }

@@ -51,7 +51,7 @@ class DatabaseSeeder extends Seeder
 
 
         // Temp Seeders
-        // 1. Create Instructor
+        // 1. Create Instructor 1
         $instructor = User::create([
             'name' => 'Expert Instructor',
             'email' => 'instructor@radixia.com',
@@ -60,8 +60,18 @@ class DatabaseSeeder extends Seeder
         ]);
         $instructor->email_verified_at = now();
         $instructor->save();
-
         $instructor->assignRole('instructor');
+
+        // 1. Create Instructor 2
+        $instructor2 = User::create([
+            'name' => 'Second Instructor',
+            'email' => 'instructor2@radixia.com',
+            'password' => Hash::make('password'),
+            'is_password_set' => true,
+        ]);
+        $instructor2->email_verified_at = now();
+        $instructor2->save();
+        $instructor2->assignRole('instructor');
 
         // 2. Create Student
         $student = User::create([
@@ -72,6 +82,16 @@ class DatabaseSeeder extends Seeder
         ]);
         $student->email_verified_at = now();
         $student->save();
+
+        // create student 2
+        $student2 = User::create([
+            'name' => 'Second Student',
+            'email' => 'student2@radixia.com',
+            'password' => Hash::make('password'),
+            'is_password_set' => true,
+        ]);
+        $student2->email_verified_at = now();
+        $student2->save();
 
         // 3. Create Program (Published)
         // Note: HasUuids trait will handle the ID automatically
@@ -108,7 +128,7 @@ class DatabaseSeeder extends Seeder
             'price' => 300,
             'capacity' => 20,
             'start_date' => now()->subDays(2), // Check if your field is start_date or starts_at
-            'end_date' => now()->addMonths(1),   // Check if your field is end_date or ends_at
+            'end_date' => now()->addMonths(9),   // Check if your field is end_date or ends_at
         ]);
 
         // 6. Create Enrollment

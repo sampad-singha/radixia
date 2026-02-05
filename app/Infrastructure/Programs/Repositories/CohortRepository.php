@@ -97,6 +97,21 @@ class CohortRepository implements CohortRepositoryInterface
             ->get();
     }
 
+    public function findWithCurriculum(string $id): ?Cohort
+    {
+        return Cohort::query()
+            ->with([
+                'program' => function ($q) {
+                    $q->with([
+                        'modules' => fn ($q) => $q->with('lessons'),
+                    ]);
+                },
+            ])
+            ->where('id', $id)
+            ->first();
+    }
+
+
     public function isUserEnrolled(string $cohortId, string $userId): bool
     {
         return DB::table('cohort_enrollments')

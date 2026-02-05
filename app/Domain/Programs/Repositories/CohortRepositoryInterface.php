@@ -21,6 +21,8 @@ interface CohortRepositoryInterface
 
     public function findActiveByProgram(string $programId): Collection;
 
+    public function findWithCurriculum(string $id): ?Cohort;
+
     public function isUserEnrolled(string $cohortId, string $userId): bool;
 
     public function findWithTrashed(string $id): ?Cohort;

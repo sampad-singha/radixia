@@ -24,7 +24,7 @@ class CohortSessionPolicy
         return null;
     }
 
-    public function create(User $user, CohortSession $session): bool
+    public function create(User $user): bool
     {
         return $user->can('cohortSession.create');
     }
@@ -50,7 +50,7 @@ class CohortSessionPolicy
             return $session->cohort->assigned_instructor_id === $user->id;
         }
 
-        return $user->can('cohortSession.join');
+        return true;
     }
 
     public function complete(User $user, CohortSession $session): bool

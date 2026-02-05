@@ -4,11 +4,13 @@ namespace App\Application\Programs\Services;
 
 use App\Domain\Programs\Entities\CohortSession;
 use App\Domain\Programs\Enums\SessionStatus;
+use App\Domain\Programs\Exceptions\CohortNotFoundException;
 use App\Domain\Programs\Exceptions\CohortSessionNotFoundException;
 use App\Domain\Programs\Exceptions\ImmutableFieldException;
 use App\Domain\Programs\Exceptions\InvalidSessionTimeException;
 use App\Domain\Programs\Exceptions\MeetingAccessRestrictedException;
 use App\Domain\Programs\Exceptions\RestrictedStatusException;
+use App\Domain\Programs\Exceptions\SessionOutsideCohortRangeException;
 use App\Domain\Programs\Repositories\CohortRepositoryInterface;
 use App\Domain\Programs\Repositories\CohortSessionRepositoryInterface;
 use App\Domain\Programs\Services\CohortSessionServiceInterface;
@@ -39,8 +41,35 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
         return $session;
     }
 
+    /**
+     * @throws CohortNotFoundException
+     * @throws SessionOutsideCohortRangeException
+     */
     public function scheduleSession(array $data): CohortSession
     {
+        $cohort = $this->cohortRepo->findById($data['cohort_id']);
+
+        if (! $cohort) {
+            throw new CohortNotFoundException();
+        }
+
+        // Parse session datetimes
+        $sessionStartDate = Carbon::parse($data['starts_at'])->toDateString();
+        $sessionEndDate   = Carbon::parse($data['ends_at'])->toDateString();
+
+        // Cohort dates (already Carbon due to cast)
+        $cohortStartDate = $cohort->start_date->toDateString();
+        $cohortEndDate   = $cohort->end_date->toDateString();
+
+        if (
+            $sessionStartDate < $cohortStartDate ||
+            $sessionEndDate > $cohortEndDate
+        ) {
+            throw new SessionOutsideCohortRangeException(
+                'Session date must be within cohort date range.'
+            );
+        }
+
         $data['room_id'] = 'room-' . Str::uuid();
         $data['status'] = SessionStatus::SCHEDULED;
 
@@ -196,37 +225,16 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
             return $user->id === $session->cohort->assigned_instructor_id;
         }
 
-        return $this->cohortRepo->isUserEnrolled($session->cohort_id, $user->id);
+        if ($this->cohortRepo->isUserEnrolled($session->cohort_id, $user->id)) {
+            return true;
+        }else{
+            throw new MeetingAccessRestrictedException('User is not enrolled in the cohort.');
+        }
     }
 
     /**
      * @throws MeetingAccessRestrictedException
      */
-//    public function getJoinLink(CohortSession $session, User $user): string
-//    {
-//        if (!$this->canJoin($session, $user)) {
-//            throw new MeetingAccessRestrictedException();
-//        }
-//
-//        $title = sprintf(
-//            '%s – %s',
-//            $session->cohort->name,
-//            $session->lesson->title
-//        );
-//
-//        $isModerator = $this->isModerator($session, $user);
-//
-//        $ttlSeconds = $this->calculateJoinTtlSeconds($session);
-//
-//        return $this->meetService->generateJoinUrl(
-//            roomId: $session->room_id,
-//            userId: (string)$user->id,
-//            displayName: $user->name,
-//            isModerator: $isModerator,
-//            ttlSeconds: $ttlSeconds,
-//            subject: $title
-//        );
-//    }
     public function getMeetingDetails(CohortSession $session, User $user): array
     {
         if (!$this->canJoin($session, $user)) {

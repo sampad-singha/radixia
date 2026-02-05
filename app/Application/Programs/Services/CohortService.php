@@ -103,7 +103,7 @@ readonly class CohortService implements CohortServiceInterface
         return Cache::tags(["cohort_$id", "program_$cohort->program_id"])->remember(
             self::CACHE_PREFIX . $id,
             self::CACHE_TTL,
-            fn() => $cohort->load(['program.modules.lessons'])
+            fn () => $this->cohortRepository->findWithCurriculum($id)
         );
     }
 
