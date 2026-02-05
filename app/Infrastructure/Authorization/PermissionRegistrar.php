@@ -13,7 +13,7 @@ final class PermissionRegistrar
         foreach (RolePermissionMap::map() as $role => $permissions) {
             $roleModel = Role::firstOrCreate([
                 'name' => $role,
-                'guard_name' => 'api',
+                'guard_name' => 'web',
             ]);
 
             $permissionModels = [];
@@ -21,7 +21,7 @@ final class PermissionRegistrar
             foreach ($permissions as $permission) {
                 $permissionModels[] = Permission::firstOrCreate([
                     'name' => $permission,
-                    'guard_name' => 'api',
+                    'guard_name' => 'web',
                 ]);
             }
 

@@ -34,8 +34,8 @@ use App\Policies\Program\CohortSessionPolicy;
 use App\Policies\Program\LessonPolicy;
 use App\Policies\Program\ModulePolicy;
 use App\Policies\Program\ProgramPolicy;
-use Carbon\Laravel\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\ServiceProvider;
 
 class ProgramServiceProvider extends ServiceProvider
 {

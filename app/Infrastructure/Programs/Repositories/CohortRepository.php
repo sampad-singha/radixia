@@ -82,7 +82,7 @@ class CohortRepository implements CohortRepositoryInterface
     {
         return Cohort::query()
             ->where('program_id', $programId)
-            ->whereNot('status', CohortStatus::CANCELLED)
+            ->whereNot('status', CohortStatus::CANCELLED->value)
             ->orderBy('start_date', 'desc')
             ->get();
     }
@@ -92,7 +92,7 @@ class CohortRepository implements CohortRepositoryInterface
     {
         return Cohort::query()
             ->where('program_id', $programId)
-            ->whereIn('status', [CohortStatus::SCHEDULED, CohortStatus::ACTIVE])
+            ->whereIn('status', [CohortStatus::SCHEDULED->value, CohortStatus::ACTIVE->value])
             ->orderBy('start_date', 'desc')
             ->get();
     }
@@ -117,7 +117,7 @@ class CohortRepository implements CohortRepositoryInterface
         return DB::table('cohort_enrollments')
             ->where('cohort_id', $cohortId)
             ->where('user_id', $userId)
-            ->where('status', CohortStatus::ACTIVE)
+            ->where('status', CohortStatus::ACTIVE->value)
             ->exists();
     }
 }

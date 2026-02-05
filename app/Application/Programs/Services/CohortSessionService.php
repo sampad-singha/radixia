@@ -42,6 +42,18 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
     }
 
     /**
+     * @throws CohortSessionNotFoundException
+     */
+    public function findByIdWithTrashed(string $id): CohortSession
+    {
+        $session =  $this->sessionRepo->findByIdWithTrashed($id);
+        if (!$session) {
+            throw new CohortSessionNotFoundException("Cohort session not found.");
+        }
+        return $session;
+    }
+
+    /**
      * @throws CohortNotFoundException
      * @throws SessionOutsideCohortRangeException
      */
@@ -83,7 +95,7 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
      */
     public function updateSession(CohortSession $session, array $data): CohortSession
     {
-        $immutableFields = ['cohort_id', 'room_id', 'lesson_id', 'recording_url'];
+        $immutableFields = ['cohort_id', 'room_id', 'lesson_id', 'recording_url', 'status'];
 
         if (array_intersect($immutableFields, array_keys($data))) {
             throw new ImmutableFieldException('One or more immutable fields were provided.');
@@ -227,7 +239,7 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
 
         if ($this->cohortRepo->isUserEnrolled($session->cohort_id, $user->id)) {
             return true;
-        }else{
+        } else {
             throw new MeetingAccessRestrictedException('User is not enrolled in the cohort.');
         }
     }

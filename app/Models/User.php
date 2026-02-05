@@ -24,7 +24,7 @@ class User extends Authenticatable implements MustVerifyEmail
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, HasApiTokens, TwoFactorAuthenticatable, HasUuids, HasRoles;
 
-    protected string $guard_name = 'api';
+    protected string $guard_name = 'web';
 
     /**
      * The attributes that are mass assignable.

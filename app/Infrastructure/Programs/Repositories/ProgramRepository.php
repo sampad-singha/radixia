@@ -5,7 +5,6 @@ namespace App\Infrastructure\Programs\Repositories;
 use App\Domain\Programs\Entities\Cohort;
 use App\Domain\Programs\Entities\Module;
 use App\Domain\Programs\Entities\Program;
-use App\Domain\Programs\Exceptions\ProgramNotFoundException;
 use App\Domain\Programs\Repositories\ProgramRepositoryInterface;
 use Illuminate\Support\Collection;
 

@@ -37,6 +37,13 @@ class CohortSessionRepository implements CohortSessionRepositoryInterface
         return CohortSession::query()->find($id);
     }
 
+    public function findByIdWithTrashed(string $id): ?CohortSession
+    {
+        /** @var CohortSession|null $session */
+        $session = CohortSession::withTrashed()->find($id);
+        return $session;
+    }
+
 
     public function findByCohort(string $cohortId): Collection
     {

@@ -24,14 +24,19 @@ use App\Domain\Programs\Exceptions\CohortEnrollmentNotFoundException;
 use App\Domain\Programs\Exceptions\CohortNotEmptyException;
 use App\Domain\Programs\Exceptions\CohortNotFoundException;
 use App\Domain\Programs\Exceptions\CohortOverLimitException;
+use App\Domain\Programs\Exceptions\CohortSessionNotFoundException;
 use App\Domain\Programs\Exceptions\CohortUpdateException;
 use App\Domain\Programs\Exceptions\FieldRestrictedException;
+use App\Domain\Programs\Exceptions\ImmutableFieldException;
 use App\Domain\Programs\Exceptions\InvalidModuleException;
+use App\Domain\Programs\Exceptions\InvalidSessionTimeException;
 use App\Domain\Programs\Exceptions\LessonNotFoundException;
+use App\Domain\Programs\Exceptions\MeetingAccessRestrictedException;
 use App\Domain\Programs\Exceptions\ModuleNotFoundException;
 use App\Domain\Programs\Exceptions\ProgramIntegrityException;
 use App\Domain\Programs\Exceptions\ProgramNotFoundException;
 use App\Domain\Programs\Exceptions\RestrictedStatusException;
+use App\Domain\Programs\Exceptions\SessionOutsideCohortRangeException;
 use App\Domain\Users\Exceptions\InvalidEmailChangeTokenException;
 use App\Http\Middleware\EnsureEmailIsVerifiedApi;
 use App\Http\Middleware\EnsureSudoMode;
@@ -46,9 +51,9 @@ use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
-        commands: __DIR__.'/../routes/console.php',
+        web: __DIR__ . '/../routes/web.php',
+        api: __DIR__ . '/../routes/api.php',
+        commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -71,8 +76,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (InvalidCredentialsException $e, $request) {
             return response()->json([
                 'message' => $e->getMessage(),
-                'code'    => 'INVALID_CREDENTIALS',
-                'errors' => (object) [],
+                'code' => 'INVALID_CREDENTIALS',
+                'errors' => (object)[],
             ], 401);
         });
 
@@ -212,7 +217,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (SocialProviderException $e, Request $request) {
             return response()->json([
                 'message' => $e->getMessage(),
-                'code'    => $e->errorCode,
+                'code' => $e->errorCode,
             ], $e->getCode());
         });
 
@@ -265,104 +270,144 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (ActiveCohortsException $e, Request $request) {
             return response()->json([
                 'message' => 'Archive Failed',
-                'code'    => 'ACTIVE_COHORTS_REMAINING',
-                'error'   => $e->getMessage()
+                'code' => 'ACTIVE_COHORTS_REMAINING',
+                'error' => $e->getMessage()
             ], 422);
         });
 
         $exceptions->render(function (CohortEnrollmentNotFoundException $e, Request $request) {
             return response()->json([
                 'message' => 'Resource Not Found',
-                'code'    => 'ENROLLMENT_NOT_FOUND',
-                'error'   => $e->getMessage()
+                'code' => 'ENROLLMENT_NOT_FOUND',
+                'error' => $e->getMessage()
             ], 404);
         });
 
         $exceptions->render(function (CohortNotEmptyException $e, Request $request) {
             return response()->json([
                 'message' => 'Deletion Conflict',
-                'code'    => 'COHORT_NOT_EMPTY',
-                'error'   => $e->getMessage()
+                'code' => 'COHORT_NOT_EMPTY',
+                'error' => $e->getMessage()
             ], 422);
         });
 
         $exceptions->render(function (CohortNotFoundException $e, Request $request) {
             return response()->json([
                 'message' => 'Resource Not Found',
-                'code'    => 'COHORT_NOT_FOUND',
-                'error'   => $e->getMessage()
+                'code' => 'COHORT_NOT_FOUND',
+                'error' => $e->getMessage()
             ], 404);
         });
 
         $exceptions->render(function (CohortOverLimitException $e, Request $request) {
             return response()->json([
                 'message' => 'Capacity Exceeded',
-                'code'    => 'COHORT_FULL',
-                'error'   => $e->getMessage()
+                'code' => 'COHORT_FULL',
+                'error' => $e->getMessage()
             ], 409);
         });
 
         $exceptions->render(function (CohortUpdateException $e, Request $request) {
             return response()->json([
                 'message' => 'Business Rule Violation',
-                'code'    => 'COHORT_UPDATE_FAILED',
-                'error'   => $e->getMessage()
+                'code' => 'COHORT_UPDATE_FAILED',
+                'error' => $e->getMessage()
             ], 422);
         });
 
         $exceptions->render(function (FieldRestrictedException $e, Request $request) {
             return response()->json([
                 'message' => 'Integrity Violation',
-                'code'    => 'LOCKED_FIELD_MODIFICATION',
-                'error'   => $e->getMessage()
+                'code' => 'LOCKED_FIELD_MODIFICATION',
+                'error' => $e->getMessage()
             ], 422);
         });
 
         $exceptions->render(function (InvalidModuleException $e, Request $request) {
             return response()->json([
                 'message' => 'Resource Invalid',
-                'code'    => 'INVALID_MODULE_REFERENCE',
-                'error'   => $e->getMessage()
+                'code' => 'INVALID_MODULE_REFERENCE',
+                'error' => $e->getMessage()
             ], 404);
         });
 
         $exceptions->render(function (LessonNotFoundException $e, Request $request) {
             return response()->json([
                 'message' => 'Resource Not Found',
-                'code'    => 'LESSON_NOT_FOUND',
-                'error'   => $e->getMessage()
+                'code' => 'LESSON_NOT_FOUND',
+                'error' => $e->getMessage()
             ], 404);
         });
 
         $exceptions->render(function (ModuleNotFoundException $e, Request $request) {
             return response()->json([
                 'message' => 'Resource Not Found',
-                'code'    => 'MODULE_NOT_FOUND',
-                'error'   => $e->getMessage()
+                'code' => 'MODULE_NOT_FOUND',
+                'error' => $e->getMessage()
             ], 404);
         });
 
         $exceptions->render(function (ProgramIntegrityException $e, Request $request) {
             return response()->json([
                 'message' => 'Integrity Violation',
-                'code'    => 'PROGRAM_RESOURCE_MISMATCH',
-                'error'   => $e->getMessage()
+                'code' => 'PROGRAM_RESOURCE_MISMATCH',
+                'error' => $e->getMessage()
             ], 404);
         });
 
         $exceptions->render(function (ProgramNotFoundException $e, Request $request) {
             return response()->json([
                 'message' => 'Resource Not Found',
-                'code'    => 'PROGRAM_NOT_FOUND',
-                'error'   => $e->getMessage()
+                'code' => 'PROGRAM_NOT_FOUND',
+                'error' => $e->getMessage()
             ], 404);
         });
 
         $exceptions->render(function (RestrictedStatusException $e, Request $request) {
             return response()->json([
                 'message' => 'Status Lock Violation',
-                'code'    => 'COHORT_STATUS_RESTRICTED',
-                'error'   => $e->getMessage()
+                'code' => 'COHORT_STATUS_RESTRICTED',
+                'error' => $e->getMessage()
+            ], 422);
+        });
+
+        $exceptions->render(function (SessionOutsideCohortRangeException $e, Request $request) {
+            return response()->json([
+                'message' => 'Session outside date range.',
+                'code' => 'SESSION_OUTSIDE_COHORT_RANGE',
+                'error' => $e->getMessage()
+            ], 422);
+        });
+
+        $exceptions->render(function (MeetingAccessRestrictedException $e, Request $request) {
+            return response()->json([
+                'message' => 'Cannot join meeting.',
+                'code' => 'MEETING_ACCESS_RESTRICTED',
+                'error' => $e->getMessage()
+            ], 403);
+        });
+
+        $exceptions->render(function (InvalidSessionTimeException $e, Request $request) {
+            return response()->json([
+                'message' => 'Invalid session time.',
+                'code' => 'INVALID_SESSION_TIME',
+                'error' => $e->getMessage()
+            ], 422);
+        });
+
+        $exceptions->render(function (ImmutableFieldException $e, Request $request) {
+            return response()->json([
+                'message' => 'Immutable fields provided.',
+                'code' => 'IMMUTABLE_FIELD_PROVIDED',
+                'error' => $e->getMessage()
+            ], 422);
+        });
+
+        $exceptions->render(function (CohortSessionNotFoundException $e, Request $request) {
+            return response()->json([
+                'message' => 'Cohort session not found.',
+                'code' => 'COHORT_SESSION_NOT_FOUND',
+                'error' => $e->getMessage()
             ], 422);
         });
 

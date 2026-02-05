@@ -86,7 +86,7 @@ readonly class ProgramService implements ProgramServiceInterface
             } else {
                 $data['slug'] = Str::slug($data['slug']);
             }
-        }else{
+        } else {
             unset($data['slug']);
         }
         $updated = $this->programRepository->update($program, $data);

@@ -19,6 +19,8 @@ interface CohortSessionRepositoryInterface
 
     public function findById(string $id): ?CohortSession;
 
+    public function findByIdWithTrashed(string $id): ?CohortSession;
+
 
     public function findByCohort(string $cohortId): Collection;
 }

@@ -18,7 +18,7 @@ class LessonPolicy
 
     public function before(User $user, string $ability): ?bool
     {
-        if ($user->isadmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
 
@@ -27,7 +27,7 @@ class LessonPolicy
 
     public function createLesson(User $user, Module $module): bool
     {
-        if($user->id !== $module->program->instructor_id) {
+        if ($user->id !== $module->program->instructor_id) {
             return false;
         }
 

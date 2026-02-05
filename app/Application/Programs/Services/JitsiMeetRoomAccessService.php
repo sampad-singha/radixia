@@ -41,7 +41,7 @@ class JitsiMeetRoomAccessService implements MeetRoomAccessServiceInterface
 
         $payload = [
             'aud' => 'jitsi',
-            'iss' => 'chat',
+            'iss' => $appId,
             'sub' => $appId,
             'room' => $roomId,
             'iat' => $now,
@@ -50,7 +50,7 @@ class JitsiMeetRoomAccessService implements MeetRoomAccessServiceInterface
                 'user' => [
                     'id' => $userId,
                     'name' => $displayName,
-                    'moderator' => $isModerator ? 'true' : 'false',
+                    'moderator' => (bool)$isModerator,
                 ],
                 'features' => [
                     'recording' => $isModerator,

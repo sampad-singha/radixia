@@ -18,7 +18,7 @@ class ModulePolicy
 
     public function before(User $user, string $ability): ?bool
     {
-        if ($user->isadmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
 
@@ -27,7 +27,7 @@ class ModulePolicy
 
     public function createModule(User $user, Program $program): bool
     {
-        if($user->id !== $program->instructor_id) {
+        if ($user->id !== $program->instructor_id) {
             return false;
         }
 

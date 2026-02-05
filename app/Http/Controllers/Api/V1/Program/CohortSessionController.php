@@ -7,6 +7,7 @@ use App\Domain\Programs\Services\CohortSessionServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Program\ScheduleSessionRequest;
 use App\Http\Requests\Api\V1\Program\UpdateSessionRequest;
+use App\Http\Resources\Api\V1\Program\CohortSessionResource;
 use Gate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,9 +22,7 @@ class CohortSessionController extends Controller
     {
         $session = $this->sessionService->getById($id);
 
-        return response()->json([
-            'data' => $session,
-        ]);
+        return new CohortSessionResource($session);
     }
 
     public function store(ScheduleSessionRequest $request)
@@ -69,7 +68,7 @@ class CohortSessionController extends Controller
 
     public function restore(string $id)
     {
-        $session = $this->sessionService->getById($id);
+        $session = $this->sessionService->findByIdWithTrashed($id);
 
         Gate::authorize('restore', $session);
 
@@ -83,8 +82,6 @@ class CohortSessionController extends Controller
     public function join(string $id)
     {
         $session = $this->sessionService->getById($id);
-
-        Gate::authorize('join', $session);
 
         // Now returns an array of data, not a string
         $meetingData = $this->sessionService->getMeetingDetails(

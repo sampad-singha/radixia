@@ -19,7 +19,7 @@ class ProgramPolicy
 
     public function before(User $user, string $ability): ?bool
     {
-        if ($user->isadmin()) {
+        if ($user->isAdmin()) {
             return true;
         }
 

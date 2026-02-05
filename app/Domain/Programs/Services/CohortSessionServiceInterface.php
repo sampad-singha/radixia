@@ -14,6 +14,7 @@ interface CohortSessionServiceInterface
 
     public function restoreSession(CohortSession $session): CohortSession;
     public function getById(string $id): CohortSession;
+    public function findByIdWithTrashed(string $id): CohortSession;
 
     // Lifecycle
     public function markSessionCompleted(CohortSession $session): CohortSession;

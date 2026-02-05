@@ -44,15 +44,6 @@ class CohortSessionPolicy
         return $this->update($user, $session);
     }
 
-    public function join(User $user, CohortSession $session): bool
-    {
-        if ($user->isInstructor()) {
-            return $session->cohort->assigned_instructor_id === $user->id;
-        }
-
-        return true;
-    }
-
     public function complete(User $user, CohortSession $session): bool
     {
         return $this->update($user, $session);

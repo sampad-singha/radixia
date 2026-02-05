@@ -48,4 +48,7 @@ interface ProgramServiceInterface
     public function reorderLessons(Module $module, array $orderedIds): void;
 
     public function restoreLesson(Lesson $lesson): Lesson;
+
+    public function findLessonById(string $id): ?Lesson;
+    public function findModuleById(string $id): ?Module;
 }
