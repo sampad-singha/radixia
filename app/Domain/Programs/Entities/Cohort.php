@@ -2,6 +2,7 @@
 
 namespace App\Domain\Programs\Entities;
 
+use App\Domain\Programs\Enums\CohortStatus;
 use App\Models\User;
 use Database\Factories\CohortFactory;
 use DateTimeInterface;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
+* @property string $id
 * @property string $program_id
 * @property string $assigned_instructor_id
 * @property string $name
@@ -20,7 +22,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 * @property DateTimeInterface $end_date
 * @property int $capacity
 * @property float $price
-* @property string $status
+* @property CohortStatus $status
 **/
 
 class Cohort extends Model
@@ -45,6 +47,7 @@ class Cohort extends Model
         'capacity' => 'integer',
         'price' => 'decimal:2',
         'deleted_at' => 'datetime',
+        'status'     => CohortStatus::class,
     ];
 
     public function enrollments(): HasMany

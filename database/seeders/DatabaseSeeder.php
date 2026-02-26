@@ -2,11 +2,18 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Programs\Entities\Cohort;
+use App\Domain\Programs\Entities\CohortEnrollment;
+use App\Domain\Programs\Entities\Lesson;
+use App\Domain\Programs\Entities\Module;
+use App\Domain\Programs\Entities\Program;
 use App\Domain\Users\Entities\UserProfile;
+use App\Infrastructure\Authorization\PermissionRegistrar;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,6 +24,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        PermissionRegistrar::sync();
         $name = 'John Doe';
         $avatarUrl = 'https://api.dicebear.com/9.x/shapes/svg?seed=' . urlencode($name);
 
@@ -29,6 +37,8 @@ class DatabaseSeeder extends Seeder
             'is_password_set' => true,
         ]);
 
+        $user->assignRole('instructor');
+
         // 2. Create an empty Profile for him
         UserProfile::create([
             'user_id' => $user->id,
@@ -38,5 +48,97 @@ class DatabaseSeeder extends Seeder
             'locale' => 'en',
             'timezone' => 'Asia/Dhaka',
         ]);
+
+
+        // Temp Seeders
+        // 1. Create Instructor 1
+        $instructor = User::create([
+            'name' => 'Expert Instructor',
+            'email' => 'instructor@radixia.com',
+            'password' => Hash::make('password'),
+            'is_password_set' => true,
+        ]);
+        $instructor->email_verified_at = now();
+        $instructor->save();
+        $instructor->assignRole('instructor');
+
+        // 1. Create Instructor 2
+        $instructor2 = User::create([
+            'name' => 'Second Instructor',
+            'email' => 'instructor2@radixia.com',
+            'password' => Hash::make('password'),
+            'is_password_set' => true,
+        ]);
+        $instructor2->email_verified_at = now();
+        $instructor2->save();
+        $instructor2->assignRole('instructor');
+
+        // 2. Create Student
+        $student = User::create([
+            'name' => 'Regular Student',
+            'email' => 'student@radixia.com',
+            'password' => Hash::make('password'),
+            'is_password_set' => true,
+        ]);
+        $student->email_verified_at = now();
+        $student->save();
+
+        // create student 2
+        $student2 = User::create([
+            'name' => 'Second Student',
+            'email' => 'student2@radixia.com',
+            'password' => Hash::make('password'),
+            'is_password_set' => true,
+        ]);
+        $student2->email_verified_at = now();
+        $student2->save();
+
+        // 3. Create Program (Published)
+        // Note: HasUuids trait will handle the ID automatically
+        $program = Program::create([
+            'instructor_id' => $instructor->id,
+            'title' => 'Laravel Advanced Patterns',
+            'slug' => 'laravel-advanced-patterns',
+            'description' => 'Deep dive into DDD and Hexagonal architecture.',
+            'status' => 'published',
+            // Ensure 'level' is in your Program entity $fillable
+            'level' => 'advanced'
+        ]);
+
+        // 4. Create Curriculum
+        $module = Module::create([
+            'program_id' => $program->id,
+            'title' => 'Module 1: Domain Logic',
+            'order_index' => 1
+        ]);
+
+        $lesson = Lesson::create([
+            'module_id' => $module->id,
+            'title' => 'Introduction to Services',
+            'description' => 'Content goes here...',
+            'order_index' => 1
+        ]);
+
+        // 5. Create Cohort
+        $cohort = Cohort::create([
+            'program_id' => $program->id,
+            'assigned_instructor_id' => $instructor->id,
+            'name' => 'Alpha Batch 2026',
+            'status' => 'active',
+            'price' => 300,
+            'capacity' => 20,
+            'start_date' => now()->subDays(2), // Check if your field is start_date or starts_at
+            'end_date' => now()->addMonths(9),   // Check if your field is end_date or ends_at
+        ]);
+
+        // 6. Create Enrollment
+        CohortEnrollment::create([
+            'user_id' => $student->id,
+            'cohort_id' => $cohort->id,
+            'status' => 'active',
+            'activated_at' => now(), // Matches your CohortEnrollment entity logic
+        ]);
+
+        $this->command->info('Seeding completed successfully.');
     }
 }

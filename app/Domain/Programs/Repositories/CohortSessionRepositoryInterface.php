@@ -19,17 +19,8 @@ interface CohortSessionRepositoryInterface
 
     public function findById(string $id): ?CohortSession;
 
+    public function findByIdWithTrashed(string $id): ?CohortSession;
+
 
     public function findByCohort(string $cohortId): Collection;
-
-
-    /**
-     * Used to prevent overlapping sessions within the same cohort.
-     */
-    public function hasOverlap(
-        string $cohortId,
-        Carbon $startsAt,
-        Carbon $endsAt,
-        ?string $ignoreSessionId = null
-    ): bool;
 }

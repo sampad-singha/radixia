@@ -44,7 +44,7 @@
                 status.innerHTML = `
                         <h3 style="color:green">Login Successful!</h3>
                         <p><strong>User:</strong> ${data.data.user.name}</p>
-                        <p><strong>Token:</strong> ${data.data.token.substring(0, 20)}...</p>
+                        <p><strong>Token:</strong> ${data.data.token}</p>
                         <p><a href="/index.php">Go Home</a></p>
                     `;
                 // In real app: localStorage.setItem('token', data.data.token); window.location = '/dashboard';

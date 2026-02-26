@@ -3,6 +3,7 @@
 namespace App\Infrastructure\Programs\Repositories;
 
 use App\Domain\Programs\Entities\Cohort;
+use App\Domain\Programs\Enums\CohortStatus;
 use App\Domain\Programs\Repositories\CohortRepositoryInterface;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
@@ -41,12 +42,9 @@ class CohortRepository implements CohortRepositoryInterface
     /**
      * @throws Throwable
      */
-    public function restore(string $id): bool
+    public function restore(Cohort $cohort): bool
     {
-        return DB::transaction(function () use ($id) {
-            // We must use withTrashed() to find the record
-            $cohort = Cohort::withTrashed()->findOrFail($id);
-
+        return DB::transaction(function () use ($cohort) {
             // 1. Restore the parent
             $restored = $cohort->restore();
 
@@ -67,6 +65,13 @@ class CohortRepository implements CohortRepositoryInterface
         return Cohort::query()->find($id);
     }
 
+    public function findWithTrashed(string $id): ?Cohort
+    {
+        /** @var Cohort|null $cohort */
+        $cohort = Cohort::withTrashed()->find($id);
+        return $cohort;
+    }
+
     public function findOrFail(string $id): Cohort
     {
         return Cohort::query()->findOrFail($id);
@@ -77,7 +82,7 @@ class CohortRepository implements CohortRepositoryInterface
     {
         return Cohort::query()
             ->where('program_id', $programId)
-            ->whereNot('status', 'cancelled')
+            ->whereNot('status', CohortStatus::CANCELLED->value)
             ->orderBy('start_date', 'desc')
             ->get();
     }
@@ -87,8 +92,32 @@ class CohortRepository implements CohortRepositoryInterface
     {
         return Cohort::query()
             ->where('program_id', $programId)
-            ->whereIn('status', ['scheduled', 'active'])
+            ->whereIn('status', [CohortStatus::SCHEDULED->value, CohortStatus::ACTIVE->value])
             ->orderBy('start_date', 'desc')
             ->get();
+    }
+
+    public function findWithCurriculum(string $id): ?Cohort
+    {
+        return Cohort::query()
+            ->with([
+                'program' => function ($q) {
+                    $q->with([
+                        'modules' => fn ($q) => $q->with('lessons'),
+                    ]);
+                },
+            ])
+            ->where('id', $id)
+            ->first();
+    }
+
+
+    public function isUserEnrolled(string $cohortId, string $userId): bool
+    {
+        return DB::table('cohort_enrollments')
+            ->where('cohort_id', $cohortId)
+            ->where('user_id', $userId)
+            ->where('status', CohortStatus::ACTIVE->value)
+            ->exists();
     }
 }

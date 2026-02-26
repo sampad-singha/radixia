@@ -17,11 +17,14 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens, TwoFactorAuthenticatable, HasUuids;
+    use HasFactory, Notifiable, HasApiTokens, TwoFactorAuthenticatable, HasUuids, HasRoles;
+
+    protected string $guard_name = 'web';
 
     /**
      * The attributes that are mass assignable.
@@ -93,6 +96,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function cohortEnrollments(): HasMany
     {
         return $this->hasMany(CohortEnrollment::class);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    public function isInstructor(): bool
+    {
+        return $this->hasRole('instructor');
     }
 
 }

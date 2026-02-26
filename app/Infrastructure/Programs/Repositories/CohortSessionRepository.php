@@ -4,7 +4,6 @@ namespace App\Infrastructure\Programs\Repositories;
 
 use App\Domain\Programs\Entities\CohortSession;
 use App\Domain\Programs\Repositories\CohortSessionRepositoryInterface;
-use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 class CohortSessionRepository implements CohortSessionRepositoryInterface
@@ -27,10 +26,22 @@ class CohortSessionRepository implements CohortSessionRepositoryInterface
         $session->delete();
     }
 
+    public function restore(CohortSession $session): void
+    {
+        $session->restore();
+    }
+
 
     public function findById(string $id): ?CohortSession
     {
         return CohortSession::query()->find($id);
+    }
+
+    public function findByIdWithTrashed(string $id): ?CohortSession
+    {
+        /** @var CohortSession|null $session */
+        $session = CohortSession::withTrashed()->find($id);
+        return $session;
     }
 
 
@@ -40,28 +51,5 @@ class CohortSessionRepository implements CohortSessionRepositoryInterface
             ->where('cohort_id', $cohortId)
             ->orderBy('starts_at')
             ->get();
-    }
-
-
-    public function hasOverlap(
-        string $cohortId,
-        Carbon $startsAt,
-        Carbon $endsAt,
-        ?string $ignoreSessionId = null
-    ): bool {
-        return CohortSession::query()
-            ->where('cohort_id', $cohortId)
-            ->when($ignoreSessionId, fn ($q) =>
-            $q->where('id', '!=', $ignoreSessionId)
-            )
-            ->where(function ($q) use ($startsAt, $endsAt) {
-                $q->whereBetween('starts_at', [$startsAt, $endsAt])
-                    ->orWhereBetween('ends_at', [$startsAt, $endsAt])
-                    ->orWhere(function ($q) use ($startsAt, $endsAt) {
-                        $q->where('starts_at', '<=', $startsAt)
-                            ->where('ends_at', '>=', $endsAt);
-                    });
-            })
-            ->exists();
     }
 }

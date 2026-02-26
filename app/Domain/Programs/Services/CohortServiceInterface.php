@@ -11,8 +11,9 @@ interface CohortServiceInterface
     public function listCohortsByProgram(string $programId): Collection;
     public function createCohort(array $data): Cohort;
     public function getCohortDetails(string $id): Cohort;
-    public function updateCohort(string $cohortId, array $data): Cohort;
-    public function deleteCohort(string $id): bool;
-    public function restoreCohort(string $id): bool;
-    public function scheduleSession(string $cohortId, string $lessonId, array $data): CohortSession;
+    public function updateCohort(Cohort $cohort, array $data): Cohort;
+    public function deleteCohort(Cohort $cohort): bool;
+    public function restoreCohort(Cohort $cohort): bool;
+    public function findCohortById(string $id): Cohort;
+    public function findCohortWithTrashed(string $id): Cohort;
 }
