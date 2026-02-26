@@ -35,7 +35,7 @@
     const jitsiContainer = document.getElementById('jaas-container');
     const endClassBtn = document.getElementById('end-class-btn');
 
-    const sessionId = "019c22dd-dd9c-717c-8675-7d56d22ce575";
+    const sessionId = "019c995b-612b-7006-8063-9e35e93a78cf";
     const BASE_URL = "http://127.0.0.1:8000";
     let api = null;
     let participants = [];
@@ -48,7 +48,7 @@
             const res = await fetch(`${BASE_URL}/api/v1/cohort-sessions/${sessionId}/join`, {
                 method: "POST",
                 headers: {
-                    "Authorization": "Bearer 13|CLzAAxSd5PWeFX7atkSO0FChzk4Ffx23C3zhnABBfb5c2f11",
+                    "Authorization": "Bearer 1|xD2MGgAd9yPGPg5IXVSR02Sw1u9gIovGsTBseysYc372090f",
                     "Accept": "application/json"
                 }
             });

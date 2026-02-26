@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Meetings\MeetingWebhookController;
 use App\Http\Controllers\Api\V1\Program\CohortController;
 use App\Http\Controllers\Api\V1\Program\CohortSessionController;
 use App\Http\Controllers\Api\V1\Program\ProgramController;
+use App\Http\Middleware\VerifyJaasSignature;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -93,3 +95,11 @@ Route::prefix('user')->middleware(['auth:sanctum', 'ability:access-api'])->group
     // Route::get('/my-programs', [StudentController::class, 'enrolledPrograms']);
     // Route::post('/cohorts/{cohort}/enroll', [EnrollmentController::class, 'enrollSelf']);
 });
+
+
+/**
+ * EXTERNAL WEBHOOKS
+ * No Auth middleware - secured via custom logic or signatures
+ */
+Route::post('/webhooks/jaas', [MeetingWebhookController::class, 'handleMeetWebhook'])
+    ->middleware(VerifyJaasSignature::class);

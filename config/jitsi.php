@@ -44,4 +44,11 @@ return [
     */
     'secret' => env('JITSI_APP_SECRET'),
 
+    /*|--------------------------------------------------------------------------
+     | Jitsi Webhook Secret
+     |--------------------------------------------------------------------------
+     | Used to verify incoming webhook signatures
+     */
+    'webhook_secret' => env('JAAS_WEBHOOK_SECRET'),
+
 ];
