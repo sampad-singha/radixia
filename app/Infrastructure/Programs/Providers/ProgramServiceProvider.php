@@ -5,7 +5,6 @@ namespace App\Infrastructure\Programs\Providers;
 use App\Application\Programs\Services\CohortEnrollmentService;
 use App\Application\Programs\Services\CohortService;
 use App\Application\Programs\Services\CohortSessionService;
-use App\Application\Programs\Services\JitsiMeetRoomAccessService;
 use App\Application\Programs\Services\ProgramService;
 use App\Domain\Programs\Entities\Cohort;
 use App\Domain\Programs\Entities\CohortSession;
@@ -21,7 +20,6 @@ use App\Domain\Programs\Repositories\ProgramRepositoryInterface;
 use App\Domain\Programs\Services\CohortEnrollmentServiceInterface;
 use App\Domain\Programs\Services\CohortServiceInterface;
 use App\Domain\Programs\Services\CohortSessionServiceInterface;
-use App\Domain\Programs\Services\MeetRoomAccessServiceInterface;
 use App\Domain\Programs\Services\ProgramServiceInterface;
 use App\Infrastructure\Programs\Repositories\CohortEnrollmentRepository;
 use App\Infrastructure\Programs\Repositories\CohortRepository;
@@ -60,7 +58,6 @@ class ProgramServiceProvider extends ServiceProvider
         $this->app->bind(CohortServiceInterface::class, CohortService::class);
         $this->app->bind(CohortEnrollmentServiceInterface::class, CohortEnrollmentService::class);
         $this->app->bind(CohortSessionServiceInterface::class, CohortSessionService::class);
-        $this->app->bind(MeetRoomAccessServiceInterface::class, JitsiMeetRoomAccessService::class);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Application\Programs\Services;
 
+use App\Domain\Meetings\Services\MeetRoomAccessServiceInterface;
 use App\Domain\Programs\Entities\CohortSession;
 use App\Domain\Programs\Enums\SessionStatus;
 use App\Domain\Programs\Exceptions\CohortNotFoundException;
@@ -14,7 +15,6 @@ use App\Domain\Programs\Exceptions\SessionOutsideCohortRangeException;
 use App\Domain\Programs\Repositories\CohortRepositoryInterface;
 use App\Domain\Programs\Repositories\CohortSessionRepositoryInterface;
 use App\Domain\Programs\Services\CohortSessionServiceInterface;
-use App\Domain\Programs\Services\MeetRoomAccessServiceInterface;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Str;

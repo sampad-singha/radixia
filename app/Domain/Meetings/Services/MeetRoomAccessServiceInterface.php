@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Programs\Services;
+namespace App\Domain\Meetings\Services;
 
 interface MeetRoomAccessServiceInterface
 {

@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Application\Programs\Services;
+namespace App\Infrastructure\Meetings\Jaas\Services;
 
-use App\Domain\Programs\Services\MeetRoomAccessServiceInterface;
+use App\Domain\Meetings\Services\MeetRoomAccessServiceInterface;
 use Firebase\JWT\JWT;
 
-class JitsiMeetRoomAccessService implements MeetRoomAccessServiceInterface
+class JaasMeetRoomAccessService implements MeetRoomAccessServiceInterface
 {
     public function generateJoinUrl(string $roomId, string $userId, string $displayName, bool $isModerator, int $ttlSeconds, ?string $subject = null): string
     {
@@ -41,7 +41,7 @@ class JitsiMeetRoomAccessService implements MeetRoomAccessServiceInterface
 
         $payload = [
             'aud' => 'jitsi',
-            'iss' => $appId,
+            'iss' => 'chat',
             'sub' => $appId,
             'room' => $roomId,
             'iat' => $now,
