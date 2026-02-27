@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\Meetings\Jaas\Services;
 
+use App\Domain\Meetings\Entities\MeetingWebhookEvent;
 use App\Domain\Meetings\Services\MeetingWebhookServiceInterface;
 use Illuminate\Support\Facades\DB;
 
@@ -9,33 +10,36 @@ class JaasWebhookService implements MeetingWebhookServiceInterface
 {
     public function handle(array $payload): void
     {
-        // 1. Check Idempotency to prevent duplicate processing
-        $idempotencyKey = $payload['idempotency_key'] ?? null;
-        if ($this->isAlreadyProcessed($idempotencyKey)) {
+        $idempotencyKey = $payload['idempotencyKey'] ?? null;
+
+        if ($this->alreadyProcessed($idempotencyKey)) {
             return;
         }
 
-        // 2. Log the raw event for audit and future re-processing
-        DB::table('meeting_attendance_logs')->insert([
-            'id' => \Illuminate\Support\Str::uuid(),
+        MeetingWebhookEvent::create([
+            'source' => 'jaas',
             'event_type' => $payload['eventType'] ?? 'unknown',
-            'room_name' => $payload['roomName'] ?? 'unknown',
-            'event_timestamp' => $payload['timestamp'] ?? now()->getTimestamp(),
+            'room_id' => $payload['fqn'] ?? null,
+            'session_id' => $payload['sessionId'] ?? null,
+            'participant_id' => $payload['data']['participantId'] ?? null,
+            'participant_name' => $payload['data']['name'] ?? null,
+            'is_moderator' => $payload['data']['moderator'] ?? null,
+            'event_timestamp' => $payload['timestamp'] ?? now()->valueOf(),
             'idempotency_key' => $idempotencyKey,
-            'raw_payload' => json_encode($payload),
+            'raw_payload' => $payload,
             'processed' => false,
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
-
-        // 3. Dispatch Background Job for insights (Duration/Attendance)
-        // This keeps the webhook response time extremely fast.
-        // ProcessMeetingInsights::dispatch($idempotencyKey);
     }
 
-    private function isAlreadyProcessed(?string $key): bool
+    private function alreadyProcessed(?string $key): bool
     {
-        if (!$key) return false;
-        return DB::table('meeting_attendance_logs')->where('idempotency_key', $key)->exists();
+        if (!$key) {
+            return false;
+        }
+
+        return MeetingWebhookEvent::query()
+            ->where('source', 'jaas')
+            ->where('idempotency_key', $key)
+            ->exists();
     }
 }

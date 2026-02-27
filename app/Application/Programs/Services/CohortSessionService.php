@@ -2,6 +2,7 @@
 
 namespace App\Application\Programs\Services;
 
+use App\Domain\Meetings\Services\MeetingCommandServiceInterface;
 use App\Domain\Meetings\Services\MeetRoomAccessServiceInterface;
 use App\Domain\Programs\Entities\CohortSession;
 use App\Domain\Programs\Enums\SessionStatus;
@@ -17,14 +18,17 @@ use App\Domain\Programs\Repositories\CohortSessionRepositoryInterface;
 use App\Domain\Programs\Services\CohortSessionServiceInterface;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 readonly class CohortSessionService implements CohortSessionServiceInterface
 {
     public function __construct(
         private CohortSessionRepositoryInterface $sessionRepo,
         private CohortRepositoryInterface        $cohortRepo,
-        private MeetRoomAccessServiceInterface   $meetService
+        private MeetRoomAccessServiceInterface   $meetService,
+        private MeetingCommandServiceInterface   $commandService,
     )
     {
     }
@@ -150,6 +154,7 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
 
     /**
      * @throws RestrictedStatusException
+     * @throws \Throwable
      */
     public function markSessionCompleted(CohortSession $session): CohortSession
     {
@@ -171,9 +176,19 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
             );
         }
 
-        return $this->sessionRepo->update($session, [
+        // Get Room ID and Destroy Meeting Room
+        if (!$session->room_id) {
+            throw new RuntimeException('Session has no room assigned.');
+        }
+
+        $this->commandService->destroyByRoom($session->room_id);
+
+        //TODO: Later will update based on Jaas webhook callback
+        $this->sessionRepo->update($session, [
             'status' => SessionStatus::COMPLETED,
         ]);
+
+        return $session->fresh();
     }
 
     /**
@@ -218,6 +233,10 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
         }
 
         $status = $this->resolveStatus($session);
+
+        if ($status === SessionStatus::COMPLETED) {
+            throw new MeetingAccessRestrictedException('Session has already been completed.');
+        }
 
         if (!in_array($status, [SessionStatus::LIVE, SessionStatus::SCHEDULED,], true)) {
             throw new MeetingAccessRestrictedException('Session is not live or scheduled.');

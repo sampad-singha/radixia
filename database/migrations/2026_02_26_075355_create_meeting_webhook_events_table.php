@@ -36,6 +36,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('meeting_attendance_logs');
+        Schema::dropIfExists('meeting_webhook_events');
     }
 };

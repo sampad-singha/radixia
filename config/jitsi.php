@@ -51,4 +51,6 @@ return [
      */
     'webhook_secret' => env('JAAS_WEBHOOK_SECRET'),
 
+    'command_url' => env('JITSI_COMMAND_URL', 'https://8x8.vc/v1/_jaas/conference-commands/v1/meeting'),
+
 ];

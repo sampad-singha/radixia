@@ -172,7 +172,7 @@
     const jitsiContainer = document.getElementById('jaas-container');
     const errorMsg = document.getElementById('error-msg');
 
-    const sessionId = "019c22dd-dd9c-717c-8675-7d56d22ce575";
+    const sessionId = "019c9ef0-f98e-73f8-81b6-37f4b337a975";
     const BASE_URL = 'http://127.0.0.1:8000';
 
     btn.addEventListener('click', () => {
@@ -182,7 +182,7 @@
         fetch(`${BASE_URL}/api/v1/cohort-sessions/${sessionId}/join`, {
             method: 'POST',
             headers: {
-                'Authorization': 'Bearer 14|2SKUWZeG65Ay3xuhGshTBrQiTg5XlPKlyony1UBY314232cc',
+                'Authorization': 'Bearer 4|PIy2xpA2egy6fGaClDgKa522qE09cnkgqZLtwdGva587eb04',
                 'Accept': 'application/json'
             }
         })

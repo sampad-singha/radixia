@@ -24,7 +24,7 @@
             <div id="error-msg" style="color:red; margin-top:10px;"></div>
         </div>
         <div id="jaas-container"></div>
-        <button id="end-class-btn">End Class For Everyone</button>
+        <button id="end-class-btn">Complete and Close Meeting</button>
     </div>
 </div>
 
@@ -35,7 +35,7 @@
     const jitsiContainer = document.getElementById('jaas-container');
     const endClassBtn = document.getElementById('end-class-btn');
 
-    const sessionId = "019c995b-612b-7006-8063-9e35e93a78cf";
+    const sessionId = "019c9ef0-f98e-73f8-81b6-37f4b337a975";
     const BASE_URL = "http://127.0.0.1:8000";
     let api = null;
     let participants = [];
@@ -48,7 +48,7 @@
             const res = await fetch(`${BASE_URL}/api/v1/cohort-sessions/${sessionId}/join`, {
                 method: "POST",
                 headers: {
-                    "Authorization": "Bearer 1|xD2MGgAd9yPGPg5IXVSR02Sw1u9gIovGsTBseysYc372090f",
+                    "Authorization": "Bearer 3|EkpFotqZDm6u9X9wqf44RKrD2hkal4O7cvwkCZgD732829ea",
                     "Accept": "application/json"
                 }
             });
@@ -84,6 +84,10 @@
                 }
             });
 
+            api.addEventListener("readyToClose", () => {
+                window.location.reload();
+            });
+
             // Track connected participants
             api.addEventListener("participantJoined", ({ id }) => {
                 if (!participants.includes(id)) {
@@ -108,29 +112,63 @@
         }
     });
 
-    function handleEndClass() {
-        if (!confirm("End class for all participants?")) return;
+    // function handleEndClass() {
+    //     if (!confirm("End class for all participants?")) return;
+    //
+    //     // Kick others
+    //     participants.forEach(pid => {
+    //         api.executeCommand("kickParticipant", pid);
+    //     });
+    //
+    //     // Then hang up moderator
+    //     api.executeCommand("hangup");
+    //
+    //     // Optionally notify backend
+    //     fetch(`${BASE_URL}/api/v1/cohort-sessions/${sessionId}/end`, {
+    //         method: "POST",
+    //         headers: {
+    //             "Authorization": "Bearer YOUR_API_TOKEN",
+    //             "Accept": "application/json"
+    //         }
+    //     });
+    //
+    //     // Update UI
+    //     endClassBtn.disabled = true;
+    //     endClassBtn.innerText = "Class Ended";
+    // }
+    async function handleEndClass() {
+        if (!confirm("Complete session and close meeting for everyone?")) return;
 
-        // Kick others
-        participants.forEach(pid => {
-            api.executeCommand("kickParticipant", pid);
-        });
-
-        // Then hang up moderator
-        api.executeCommand("hangup");
-
-        // Optionally notify backend
-        fetch(`${BASE_URL}/api/v1/cohort-sessions/${sessionId}/end`, {
-            method: "POST",
-            headers: {
-                "Authorization": "Bearer YOUR_API_TOKEN",
-                "Accept": "application/json"
-            }
-        });
-
-        // Update UI
         endClassBtn.disabled = true;
-        endClassBtn.innerText = "Class Ended";
+        endClassBtn.innerText = "Completing...";
+
+        try {
+            const res = await fetch(
+                `${BASE_URL}/api/v1/cohort-sessions/${sessionId}/complete`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Authorization": "Bearer 3|EkpFotqZDm6u9X9wqf44RKrD2hkal4O7cvwkCZgD732829ea",
+                        "Accept": "application/json"
+                    }
+                }
+            );
+
+            if (!res.ok) {
+                throw new Error("Failed to complete session.");
+            }
+
+            // Do NOT manually hangup.
+            // Backend DESTROY will trigger ROOM_DESTROYED,
+            // which will trigger readyToClose automatically.
+
+            endClassBtn.innerText = "Waiting for meeting to close...";
+
+        } catch (err) {
+            endClassBtn.disabled = false;
+            endClassBtn.innerText = "Complete and Close Meeting";
+            alert(err.message);
+        }
     }
 </script>
 
