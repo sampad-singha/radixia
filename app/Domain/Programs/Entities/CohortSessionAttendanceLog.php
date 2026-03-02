@@ -7,6 +7,17 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property string $id
+ * @property string cohort_session_id
+ * @property integer student_active_ms
+ * @property integer student_instructor_overlap_ms
+ * @property float ratio_total
+ * @property float ratio_instructor
+ * @property bool attended
+ * @property CohortSession cohortSession
+ * @property User user
+ **/
 class CohortSessionAttendanceLog extends Model
 {
     use HasUuids;

@@ -33,7 +33,10 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['cohort_session_id', 'user_id']);
+            $table->index(
+                ['cohort_session_id', 'user_id'],
+                'cs_participant_session_user_idx'
+            );
         });
     }
 
