@@ -35,7 +35,7 @@
     const jitsiContainer = document.getElementById('jaas-container');
     const endClassBtn = document.getElementById('end-class-btn');
 
-    const sessionId = "019c9ef0-f98e-73f8-81b6-37f4b337a975";
+    const sessionId = "019cad55-137c-736c-96e5-350854128510";
     const BASE_URL = "http://127.0.0.1:8000";
     let api = null;
     let participants = [];
@@ -48,7 +48,7 @@
             const res = await fetch(`${BASE_URL}/api/v1/cohort-sessions/${sessionId}/join`, {
                 method: "POST",
                 headers: {
-                    "Authorization": "Bearer 3|EkpFotqZDm6u9X9wqf44RKrD2hkal4O7cvwkCZgD732829ea",
+                    "Authorization": "Bearer 1|xnTglajLAAujwmAjnfEWivVbjc6z9lV4zXop54sGaf6350a0",
                     "Accept": "application/json"
                 }
             });
@@ -112,30 +112,6 @@
         }
     });
 
-    // function handleEndClass() {
-    //     if (!confirm("End class for all participants?")) return;
-    //
-    //     // Kick others
-    //     participants.forEach(pid => {
-    //         api.executeCommand("kickParticipant", pid);
-    //     });
-    //
-    //     // Then hang up moderator
-    //     api.executeCommand("hangup");
-    //
-    //     // Optionally notify backend
-    //     fetch(`${BASE_URL}/api/v1/cohort-sessions/${sessionId}/end`, {
-    //         method: "POST",
-    //         headers: {
-    //             "Authorization": "Bearer YOUR_API_TOKEN",
-    //             "Accept": "application/json"
-    //         }
-    //     });
-    //
-    //     // Update UI
-    //     endClassBtn.disabled = true;
-    //     endClassBtn.innerText = "Class Ended";
-    // }
     async function handleEndClass() {
         if (!confirm("Complete session and close meeting for everyone?")) return;
 

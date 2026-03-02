@@ -22,6 +22,7 @@ class JaasWebhookService implements MeetingWebhookServiceInterface
             'room_id' => $payload['fqn'] ?? null,
             'session_id' => $payload['sessionId'] ?? null,
             'participant_id' => $payload['data']['participantId'] ?? null,
+            'user_id' => $payload['data']['id'] ?? null,
             'participant_name' => $payload['data']['name'] ?? null,
             'is_moderator' => $payload['data']['moderator'] ?? null,
             'event_timestamp' => $payload['timestamp'] ?? now()->valueOf(),

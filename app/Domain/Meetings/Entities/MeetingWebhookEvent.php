@@ -17,6 +17,7 @@ class MeetingWebhookEvent extends Model
         'room_id',
         'session_id',
         'participant_id',
+        'user_id',
         'participant_name',
         'is_moderator',
         'event_timestamp',

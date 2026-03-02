@@ -58,6 +58,22 @@ class CohortSession extends Model
         return $this->belongsTo(Lesson::class);
     }
 
+    // Attendance logs relationship
+    public function participantIntervals()
+    {
+        return $this->hasMany(CohortSessionParticipantInterval::class);
+    }
+
+    public function stats()
+    {
+        return $this->hasOne(CohortSessionStat::class);
+    }
+
+    public function attendanceLogs()
+    {
+        return $this->hasMany(CohortSessionAttendanceLog::class);
+    }
+
     protected static function newFactory(): LessonFactory
     {
         return LessonFactory::new();

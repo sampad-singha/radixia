@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('room_id')->index(); // JaaS → fqn/ Prosody → room / conference
             $table->string('session_id')->nullable()->index();// JaaS → sessionId/ Prosody → often null
             $table->string('participant_id')->nullable()->index();// JaaS → participantId/ Prosody → occupant_id / jid node
+            $table->string('user_id')->nullable()->index();
             $table->string('participant_name')->nullable();
             $table->boolean('is_moderator')->nullable();
             $table->bigInteger('event_timestamp')->index();
