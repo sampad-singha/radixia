@@ -35,7 +35,7 @@
     const jitsiContainer = document.getElementById('jaas-container');
     const endClassBtn = document.getElementById('end-class-btn');
 
-    const sessionId = "019cad55-137c-736c-96e5-350854128510";
+    const sessionId = "019cb337-d77c-7075-9808-fcd08871f040";
     const BASE_URL = "http://127.0.0.1:8000";
     let api = null;
     let participants = [];
@@ -48,7 +48,7 @@
             const res = await fetch(`${BASE_URL}/api/v1/cohort-sessions/${sessionId}/join`, {
                 method: "POST",
                 headers: {
-                    "Authorization": "Bearer 1|xnTglajLAAujwmAjnfEWivVbjc6z9lV4zXop54sGaf6350a0",
+                    "Authorization": "Bearer 2|RcwDh9PCsfIpPa3N1fBmg74lCQDaVnkRyDn7E0Kk904a3913",
                     "Accept": "application/json"
                 }
             });
@@ -124,13 +124,14 @@
                 {
                     method: "POST",
                     headers: {
-                        "Authorization": "Bearer 3|EkpFotqZDm6u9X9wqf44RKrD2hkal4O7cvwkCZgD732829ea",
+                        "Authorization": "Bearer 2|RcwDh9PCsfIpPa3N1fBmg74lCQDaVnkRyDn7E0Kk904a3913",
                         "Accept": "application/json"
                     }
                 }
             );
 
             if (!res.ok) {
+                console.log('Complete session response:', await res.text());
                 throw new Error("Failed to complete session.");
             }
 

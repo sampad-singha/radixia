@@ -2,12 +2,18 @@
 
 namespace App\Infrastructure\Meetings\Jaas\Services;
 
+use App\Application\Programs\Services\ProcessMeetingWebhookService;
 use App\Domain\Meetings\Entities\MeetingWebhookEvent;
 use App\Domain\Meetings\Services\MeetingWebhookServiceInterface;
-use Illuminate\Support\Facades\DB;
 
 class JaasWebhookService implements MeetingWebhookServiceInterface
 {
+    public function __construct(
+        public ProcessMeetingWebhookService $processWebhook
+    )
+    {
+        // Inject any dependencies if needed
+    }
     public function handle(array $payload): void
     {
         $idempotencyKey = $payload['idempotencyKey'] ?? null;
@@ -16,10 +22,10 @@ class JaasWebhookService implements MeetingWebhookServiceInterface
             return;
         }
 
-        MeetingWebhookEvent::create([
+        $event = MeetingWebhookEvent::create([
             'source' => 'jaas',
             'event_type' => $payload['eventType'] ?? 'unknown',
-            'room_id' => $payload['fqn'] ?? null,
+            'room_id' => $this->extractRoomName($payload['fqn'] ?? null),
             'session_id' => $payload['sessionId'] ?? null,
             'participant_id' => $payload['data']['participantId'] ?? null,
             'user_id' => $payload['data']['id'] ?? null,
@@ -30,6 +36,20 @@ class JaasWebhookService implements MeetingWebhookServiceInterface
             'raw_payload' => $payload,
             'processed' => false,
         ]);
+
+        $this->processWebhook->handle($event);
+    }
+
+    private function extractRoomName(?string $fqn): ?string
+    {
+        if (! $fqn) {
+            return null;
+        }
+
+        // Example:
+        // vpaas-magic-cookie-xxx/room-6d3c3ec7-...
+
+        return substr($fqn, strrpos($fqn, '/') + 1);
     }
 
     private function alreadyProcessed(?string $key): bool

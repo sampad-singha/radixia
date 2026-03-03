@@ -15,6 +15,7 @@ use App\Domain\Programs\Exceptions\RestrictedStatusException;
 use App\Domain\Programs\Exceptions\SessionOutsideCohortRangeException;
 use App\Domain\Programs\Repositories\CohortRepositoryInterface;
 use App\Domain\Programs\Repositories\CohortSessionRepositoryInterface;
+use App\Domain\Programs\Services\CohortSessionAttendanceServiceInterface;
 use App\Domain\Programs\Services\CohortSessionServiceInterface;
 use App\Models\User;
 use Carbon\Carbon;
@@ -29,6 +30,7 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
         private CohortRepositoryInterface        $cohortRepo,
         private MeetRoomAccessServiceInterface   $meetService,
         private MeetingCommandServiceInterface   $commandService,
+        private CohortSessionAttendanceServiceInterface $attendanceService,
     )
     {
     }
@@ -181,7 +183,9 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
             throw new RuntimeException('Session has no room assigned.');
         }
 
-        $this->commandService->destroyByRoom($session->room_id);
+//        $this->commandService->destroyByRoom($session->room_id);
+
+        $this->attendanceService->calculateForSession($session->id);
 
         //TODO: Later will update based on Jaas webhook callback
         $this->sessionRepo->update($session, [
