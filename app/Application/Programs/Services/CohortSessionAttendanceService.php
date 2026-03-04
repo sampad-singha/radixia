@@ -2,27 +2,35 @@
 
 namespace App\Application\Programs\Services;
 
+use App\Domain\Programs\Entities\CohortSession;
 use App\Domain\Programs\Entities\CohortSessionAttendanceLog;
 use App\Domain\Programs\Entities\CohortSessionParticipantInterval;
 use App\Domain\Programs\Entities\CohortSessionStat;
 use App\Domain\Programs\Services\CohortSessionAttendanceServiceInterface;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class CohortSessionAttendanceService implements CohortSessionAttendanceServiceInterface
 {
+    const CACHE_TTL = 3600; // 1 hour in seconds
+
     /**
-     * @throws \Throwable
+     * @throws Throwable
      */
     public function calculateForSession(string $cohortSessionId): void
     {
         DB::transaction(function () use ($cohortSessionId) {
 
             $stats = CohortSessionStat::where('cohort_session_id', $cohortSessionId)
+                ->select('id', 'finalized')
                 ->first();
 
             if ($stats && $stats->finalized) {
                 return;
             }
+
+            $cohortSession = CohortSession::findOrFail($cohortSessionId);
 
             $this->closeOpenIntervals($cohortSessionId);
 
@@ -44,14 +52,48 @@ class CohortSessionAttendanceService implements CohortSessionAttendanceServiceIn
                 $instructorActiveMs,
                 $mergedInstructorIntervals
             );
+
+            Cache::tags([
+                "cohort_{$cohortSession->cohort_id}",
+                "cohort_attendance"
+            ])->flush();
         });
+    }
+
+    public function getAttendanceForSession(CohortSession $cohortSession): array
+    {
+        $cacheKey = "session_attendance_{$cohortSession->id}";
+
+        return Cache::tags([
+            "cohort_session_{$cohortSession->id}",
+            "session_attendance"
+        ])->remember(
+            $cacheKey,
+            self::CACHE_TTL,
+            fn () => CohortSessionAttendanceLog::where('cohort_session_id', $cohortSession->id)
+                ->with('user')
+                ->get()
+                ->map(function ($log) {
+                    return [
+                        'user_id' => $log->user_id,
+                        'name' => $log->user?->name,
+                        'student_active_ms' => $log->student_active_ms,
+                        'student_instructor_overlap_ms' => $log->student_instructor_overlap_ms,
+                        'ratio_total' => $log->ratio_total,
+                        'ratio_instructor' => $log->ratio_instructor,
+                        'attended' => $log->attended,
+                    ];
+                })
+                ->values()
+                ->toArray()
+        );
     }
 
     private function closeOpenIntervals(string $cohortSessionId): void
     {
         $now = now()->valueOf(); // ms
 
-        $data = CohortSessionParticipantInterval::where('cohort_session_id', $cohortSessionId)
+        CohortSessionParticipantInterval::where('cohort_session_id', $cohortSessionId)
             ->whereNull('left_at')
             ->get()
             ->each(function ($interval) use ($now) {
@@ -172,16 +214,27 @@ class CohortSessionAttendanceService implements CohortSessionAttendanceServiceIn
 
     private function computeOverlap(array $student, array $instructor): int
     {
+        $i = 0;
+        $j = 0;
+
         $overlap = 0;
 
-        foreach ($student as $s) {
-            foreach ($instructor as $t) {
-                $start = max($s['start'], $t['start']);
-                $end   = min($s['end'], $t['end']);
+        while ($i < count($student) && $j < count($instructor)) {
 
-                if ($end > $start) {
-                    $overlap += ($end - $start);
-                }
+            $s = $student[$i];
+            $t = $instructor[$j];
+
+            $start = max($s['start'], $t['start']);
+            $end   = min($s['end'], $t['end']);
+
+            if ($end > $start) {
+                $overlap += ($end - $start);
+            }
+
+            if ($s['end'] < $t['end']) {
+                $i++;
+            } else {
+                $j++;
             }
         }
 
