@@ -2,9 +2,11 @@
 
 namespace App\Domain\Programs\Services;
 
+use App\Domain\Programs\Entities\Cohort;
 use App\Domain\Programs\Entities\CohortSession;
 use App\Domain\Programs\Enums\SessionStatus;
 use App\Models\User;
+use Illuminate\Support\Collection;
 
 interface CohortSessionServiceInterface
 {
@@ -30,4 +32,6 @@ interface CohortSessionServiceInterface
 
     // Status resolution
     public function resolveStatus(CohortSession $session): SessionStatus;
+
+    public function listSessionsByCohort(string $cohortId): Collection;
 }

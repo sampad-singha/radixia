@@ -43,4 +43,29 @@ class CohortPolicy
     {
         return $this->update($user, $cohort);
     }
+
+    public function viewAttendance(User $user, Cohort $cohort): bool
+    {
+        if ($user->id === $cohort->assigned_instructor_id) {
+            return true;
+        }
+
+        return $cohort->enrollments()
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->exists();
+    }
+
+    public function viewStudentAttendance(User $user, Cohort $cohort, User $student): bool
+    {
+        if ($user->id === $cohort->assigned_instructor_id) {
+            return true;
+        }
+
+        return $user->id === $student->id &&
+            $cohort->enrollments()
+                ->where('user_id', $user->id)
+                ->where('status', 'active')
+                ->exists();
+    }
 }

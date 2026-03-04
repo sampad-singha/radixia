@@ -19,6 +19,7 @@ use App\Domain\Programs\Services\CohortSessionAttendanceServiceInterface;
 use App\Domain\Programs\Services\CohortSessionServiceInterface;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -35,6 +36,11 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
         private CohortSessionAttendanceServiceInterface $attendanceService,
     )
     {
+    }
+
+    public function listSessionsByCohort(string $cohortId): Collection
+    {
+        return $this->sessionRepo->findByCohort($cohortId);
     }
 
     /**

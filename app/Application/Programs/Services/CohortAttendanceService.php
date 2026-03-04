@@ -5,6 +5,7 @@ namespace App\Application\Programs\Services;
 use App\Domain\Programs\Entities\Cohort;
 use App\Domain\Programs\Entities\CohortSessionAttendanceLog;
 use App\Domain\Programs\Services\CohortAttendanceServiceInterface;
+use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
@@ -40,8 +41,9 @@ readonly class CohortAttendanceService implements CohortAttendanceServiceInterfa
         );
     }
 
-    public function getAttendanceForStudent(Cohort $cohort, string $userId): array
+    public function getAttendanceForStudent(Cohort $cohort, User $user): array
     {
+        $userId = $user->id;
         $cacheKey = "cohort_student_attendance_{$cohort->id}_{$userId}";
 
         return Cache::tags([
