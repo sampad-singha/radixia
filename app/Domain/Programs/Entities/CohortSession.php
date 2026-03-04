@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -59,17 +61,17 @@ class CohortSession extends Model
     }
 
     // Attendance logs relationship
-    public function participantIntervals()
+    public function participantIntervals(): HasMany
     {
         return $this->hasMany(CohortSessionParticipantInterval::class);
     }
 
-    public function stats()
+    public function stats(): HasOne
     {
         return $this->hasOne(CohortSessionStat::class);
     }
 
-    public function attendanceLogs()
+    public function attendanceLogs(): HasMany
     {
         return $this->hasMany(CohortSessionAttendanceLog::class);
     }

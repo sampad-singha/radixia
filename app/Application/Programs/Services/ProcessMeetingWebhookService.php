@@ -20,24 +20,27 @@ class ProcessMeetingWebhookService implements ProcessMeetingWebhookServiceInterf
             return;
         }
 
-        DB::transaction(function () use ($event) {
+        $cohortSessionId = $this->mapToCohortSessionId($event);
+
+        if (!$cohortSessionId) {
+            $event->update(['processed' => true]);
+            return;
+        }
+
+        DB::transaction(function () use ($event, $cohortSessionId) {
 
             switch ($event->event_type) {
 
                 case 'PARTICIPANT_JOINED':
-                    $this->handleParticipantJoined($event);
+                    $this->handleParticipantJoined($event, $cohortSessionId);
                     break;
 
                 case 'PARTICIPANT_LEFT':
-                    $this->handleParticipantLeft($event);
+                    $this->handleParticipantLeft($event, $cohortSessionId);
                     break;
 
                 case 'ROOM_CREATED':
-                    // Optional: nothing needed here for intervals
-                    break;
-
                 case 'ROOM_DESTROYED':
-                    // Optional: nothing here (attendance service will close open intervals)
                     break;
             }
 
@@ -45,24 +48,28 @@ class ProcessMeetingWebhookService implements ProcessMeetingWebhookServiceInterf
         });
     }
 
-    private function handleParticipantJoined(MeetingWebhookEvent $event): void
-    {
+    private function handleParticipantJoined(
+        MeetingWebhookEvent $event,
+        string $cohortSessionId
+    ): void {
+
         CohortSessionParticipantInterval::create([
-            'cohort_session_id' => $this->mapToCohortSessionId($event),
+            'cohort_session_id' => $cohortSessionId,
             'participant_id'    => $event->participant_id,
             'user_id'           => $event->user_id,
             'is_moderator'      => $event->is_moderator ?? false,
             'joined_at'         => $event->event_timestamp,
-            'left_at'           => null,
-            'duration_ms'       => null,
         ]);
     }
 
-    private function handleParticipantLeft(MeetingWebhookEvent $event): void
-    {
+    private function handleParticipantLeft(
+        MeetingWebhookEvent $event,
+        string $cohortSessionId
+    ): void {
+
         $interval = CohortSessionParticipantInterval::where(
             'cohort_session_id',
-            $this->mapToCohortSessionId($event)
+            $cohortSessionId
         )
             ->where('participant_id', $event->participant_id)
             ->whereNull('left_at')
@@ -70,7 +77,7 @@ class ProcessMeetingWebhookService implements ProcessMeetingWebhookServiceInterf
             ->first();
 
         if (! $interval) {
-            return; // Defensive: LEFT without JOIN
+            return;
         }
 
         $interval->left_at = $event->event_timestamp;
@@ -78,7 +85,7 @@ class ProcessMeetingWebhookService implements ProcessMeetingWebhookServiceInterf
         $interval->save();
     }
 
-    private function mapToCohortSessionId(MeetingWebhookEvent $event): string
+    private function mapToCohortSessionId(MeetingWebhookEvent $event): ?string
     {
         // IMPORTANT:
         // You must map provider session_id to your internal cohort_session_id.

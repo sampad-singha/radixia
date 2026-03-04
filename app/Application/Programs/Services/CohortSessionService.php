@@ -17,6 +17,7 @@ use App\Domain\Programs\Repositories\CohortRepositoryInterface;
 use App\Domain\Programs\Repositories\CohortSessionRepositoryInterface;
 use App\Domain\Programs\Services\CohortSessionAttendanceServiceInterface;
 use App\Domain\Programs\Services\CohortSessionServiceInterface;
+use App\Jobs\CompleteCohortSessionJob;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -191,22 +192,12 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
             throw new RuntimeException('Session has no room assigned.');
         }
 
-        try {
-            $this->commandService->destroyByRoom($session->room_id);
-        } catch (RuntimeException $e) {
-            // Log the error but continue with marking session as completed
-            // as the meeting room might have already expired or been removed,
-            // and we don't want that to block session completion.
-            Log::error("Failed to destroy meeting room for session {$session->id}: " . $e->getMessage());
-        }
-
-        Cache::tags(["cohort_session_$session->id"])->flush();
-        $this->attendanceService->calculateForSession($session->id);
-
         //TODO: Later will update based on both manual trigger or CRON job after session end time
         $this->sessionRepo->update($session, [
             'status' => SessionStatus::COMPLETED,
         ]);
+
+        CompleteCohortSessionJob::dispatch($session->id);
 
         return $session->fresh();
     }

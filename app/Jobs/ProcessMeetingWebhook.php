@@ -35,8 +35,14 @@ class ProcessMeetingWebhook implements ShouldQueue
 
     public function failed(Throwable $exception): void
     {
+        $roomId = $this->payload['room_id'] ?? null;
+        if (isset($this->payload['room']['id'])) {
+            $roomId = $this->payload['room']['id'];
+        }
         Log::critical('Webhook job failed', [
-            'payload' => $this->payload,
+            'idempotency_key' => $this->payload['idempotency_key'] ?? null,
+            'event_type' => $this->payload['event_type'] ?? null,
+            'room_id' => $roomId,
             'error' => $exception->getMessage(),
         ]);
     }

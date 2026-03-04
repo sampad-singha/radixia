@@ -135,20 +135,24 @@ class CohortSessionAttendanceService implements CohortSessionAttendanceServiceIn
         int $instructorActiveMs,
         array $mergedInstructorIntervals
     ): void {
-        $students = CohortSessionParticipantInterval::where('cohort_session_id', $cohortSessionId)
+
+        $intervals = CohortSessionParticipantInterval::where('cohort_session_id', $cohortSessionId)
             ->whereNotNull('user_id')
             ->where('is_moderator', false)
-            ->distinct()
-            ->pluck('user_id');
+            ->get(['user_id','joined_at','left_at']);
 
-        foreach ($students as $userId) {
+        $intervalsByUser = $intervals->groupBy('user_id');
 
-            $intervals = CohortSessionParticipantInterval::where('cohort_session_id', $cohortSessionId)
-                ->where('user_id', $userId)
-                ->get(['joined_at', 'left_at'])
+        foreach ($intervalsByUser as $userId => $userIntervals) {
+
+            $intervalArray = $userIntervals
+                ->map(fn ($i) => [
+                    'joined_at' => $i->joined_at,
+                    'left_at' => $i->left_at
+                ])
                 ->toArray();
 
-            $mergedStudentIntervals = $this->mergeIntervals($intervals);
+            $mergedStudentIntervals = $this->mergeIntervals($intervalArray);
 
             $studentActiveMs = collect($mergedStudentIntervals)
                 ->sum(fn ($i) => $i['end'] - $i['start']);
@@ -171,14 +175,14 @@ class CohortSessionAttendanceService implements CohortSessionAttendanceServiceIn
             CohortSessionAttendanceLog::updateOrCreate(
                 [
                     'cohort_session_id' => $cohortSessionId,
-                    'user_id'           => $userId,
+                    'user_id' => $userId,
                 ],
                 [
-                    'student_active_ms'              => $studentActiveMs,
-                    'student_instructor_overlap_ms'  => $studentInstructorOverlapMs,
-                    'ratio_total'                    => $ratioTotal,
-                    'ratio_instructor'               => $ratioInstructor,
-                    'attended'                       => $attended,
+                    'student_active_ms' => $studentActiveMs,
+                    'student_instructor_overlap_ms' => $studentInstructorOverlapMs,
+                    'ratio_total' => $ratioTotal,
+                    'ratio_instructor' => $ratioInstructor,
+                    'attended' => $attended,
                 ]
             );
         }

@@ -5,6 +5,7 @@ namespace App\Application\Programs\Services;
 use App\Domain\Programs\Entities\Cohort;
 use App\Domain\Programs\Entities\CohortSessionAttendanceLog;
 use App\Domain\Programs\Services\CohortAttendanceServiceInterface;
+use App\Domain\Programs\Services\CohortSessionAttendanceServiceInterface;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\Cache;
 readonly class CohortAttendanceService implements CohortAttendanceServiceInterface
 {
     public function __construct(
-        private CohortSessionAttendanceService $sessionAttendanceService
+        private CohortSessionAttendanceServiceInterface $sessionAttendanceService
     ) {}
     public function getAttendanceForCohort(Cohort $cohort): Collection
     {

@@ -50,10 +50,7 @@ class CohortPolicy
             return true;
         }
 
-        return $cohort->enrollments()
-            ->where('user_id', $user->id)
-            ->where('status', 'active')
-            ->exists();
+        return false;
     }
 
     public function viewStudentAttendance(User $user, Cohort $cohort, User $student): bool

@@ -104,8 +104,8 @@ Route::middleware(['auth:sanctum', 'ability:access-api'])->group(function () {
         Route::patch('{id}', [CohortSessionController::class, 'update']);
         Route::delete('{id}', [CohortSessionController::class, 'destroy']);
         Route::patch('{id}/restore', [CohortSessionController::class, 'restore']);
-        Route::patch('{id}/complete', [CohortSessionController::class, 'complete']);
-        Route::patch('{id}/cancel', [CohortSessionController::class, 'cancel']);
+        Route::post('{id}/complete', [CohortSessionController::class, 'complete']);
+        Route::post('{id}/cancel', [CohortSessionController::class, 'cancel']);
         Route::post('{id}/join', [CohortSessionController::class, 'join']);
     });
 
