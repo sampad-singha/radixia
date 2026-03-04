@@ -19,7 +19,6 @@ use App\Domain\Programs\Services\CohortSessionAttendanceServiceInterface;
 use App\Domain\Programs\Services\CohortSessionServiceInterface;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -183,7 +182,7 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
             throw new RuntimeException('Session has no room assigned.');
         }
 
-//        $this->commandService->destroyByRoom($session->room_id);
+        $this->commandService->destroyByRoom($session->room_id);
 
         $this->attendanceService->calculateForSession($session->id);
 

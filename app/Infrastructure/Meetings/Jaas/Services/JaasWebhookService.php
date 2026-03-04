@@ -5,6 +5,7 @@ namespace App\Infrastructure\Meetings\Jaas\Services;
 use App\Application\Programs\Services\ProcessMeetingWebhookService;
 use App\Domain\Meetings\Entities\MeetingWebhookEvent;
 use App\Domain\Meetings\Services\MeetingWebhookServiceInterface;
+use Throwable;
 
 class JaasWebhookService implements MeetingWebhookServiceInterface
 {
@@ -14,6 +15,10 @@ class JaasWebhookService implements MeetingWebhookServiceInterface
     {
         // Inject any dependencies if needed
     }
+
+    /**
+     * @throws Throwable
+     */
     public function handle(array $payload): void
     {
         $idempotencyKey = $payload['idempotencyKey'] ?? null;

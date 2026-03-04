@@ -5,12 +5,14 @@ namespace App\Application\Programs\Services;
 use App\Domain\Meetings\Entities\MeetingWebhookEvent;
 use App\Domain\Programs\Entities\CohortSession;
 use App\Domain\Programs\Entities\CohortSessionParticipantInterval;
+use App\Domain\Programs\Services\ProcessMeetingWebhookServiceInterface;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
-class ProcessMeetingWebhookService
+class ProcessMeetingWebhookService implements ProcessMeetingWebhookServiceInterface
 {
     /**
-     * @throws \Throwable
+     * @throws Throwable
      */
     public function handle(MeetingWebhookEvent $event): void
     {

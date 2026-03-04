@@ -19,10 +19,6 @@ return new class extends Migration
                 ->constrained('cohort_sessions')
                 ->cascadeOnDelete();
 
-            // Room lifecycle
-            $table->bigInteger('room_created_at')->nullable();   // ms
-            $table->bigInteger('room_destroyed_at')->nullable(); // ms
-
             // Aggregates
             $table->bigInteger('total_meeting_ms')->default(0);
             $table->bigInteger('instructor_active_ms')->default(0);
