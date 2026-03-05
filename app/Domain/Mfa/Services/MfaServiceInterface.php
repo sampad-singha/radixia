@@ -7,6 +7,10 @@ use App\Models\User;
 interface MfaServiceInterface
 {
     /**
+     * Get a list of MFA methods available for the user, including their status (enabled/disabled).
+     */
+    public function getAvailableMethods(User $user): array;
+    /**
      * Start the setup process for a specific MFA method.
      * Returns necessary setup data (e.g. QR code, secret) or empty array.
      */

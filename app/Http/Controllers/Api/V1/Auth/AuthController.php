@@ -20,7 +20,9 @@ use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
-    public function __construct(private readonly AuthServiceInterface $auth) {}
+    public function __construct(private readonly AuthServiceInterface $auth)
+    {
+    }
 
     public function register(RegisterRequest $request): JsonResponse
     {
@@ -45,7 +47,7 @@ class AuthController extends Controller
         $frontendUrl = $request->query('client_url', config('app.frontend_url'));
 
         $allowed = config('auth.allowed_origins', []);
-        if (! in_array($frontendUrl, $allowed, true)) {
+        if (!in_array($frontendUrl, $allowed, true)) {
             $frontendUrl = config('app.frontend_url');
         }
 
@@ -70,11 +72,13 @@ class AuthController extends Controller
         // --- NEW: MFA Handling ---
         if (isset($result['mfa_required']) && $result['mfa_required']) {
             return response()->json([
-                'message' => $result['message'],
-                'mfa_required' => true,
-                'available_methods' => $result['available_methods'] ?? [],
-                'challenge_sent' => $result['challenge_sent'] ?? false, // Frontend needs this to know if it should expect a code immediately
-                'token' => $result['token'],
+                'data' => [
+                    'message' => $result['message'],
+                    'mfa_required' => true,
+                    'available_methods' => $result['available_methods'] ?? [],
+                    'challenge_sent' => $result['challenge_sent'] ?? false, // Frontend needs this to know if it should expect a code immediately
+                    'token' => $result['token'],
+                ],
             ], 423); // 423 Locked
         }
 

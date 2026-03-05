@@ -2,12 +2,9 @@
 
 namespace App\Application\Auth\Services;
 
-use App\Application\Mfa\Services\MfaService;
 use App\Domain\Auth\Exceptions\EmailAlreadyVerifiedException;
 use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
-use App\Domain\Auth\Exceptions\InvalidResetClientException;
-use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
 use App\Domain\Auth\Exceptions\PasswordAlreadySetException;
 use App\Domain\Auth\Exceptions\PasswordChangeException;
 use App\Domain\Auth\Exceptions\PasswordConfirmationException;
@@ -141,9 +138,6 @@ readonly class AuthService implements AuthServiceInterface
         }
     }
 
-    /**
-     * @throws InvalidResetClientException
-     */
     public function forgotPassword(array $data, ?string $origin): string
     {
         $allowedOrigins = config('auth.allowed_origins', []);

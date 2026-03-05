@@ -15,6 +15,11 @@ readonly class MfaService implements MfaServiceInterface
         private MfaFactoryInterface $mfaFactory
     ) {}
 
+    public function getAvailableMethods(User $user): array
+    {
+        return $this->mfaFactory->supportedMethods($user);
+    }
+
     public function enable(User $user, string $type): array
     {
         $provider = $this->mfaFactory->make($type);
@@ -36,6 +41,9 @@ readonly class MfaService implements MfaServiceInterface
 
         $user->mfaMethods()->where('type', $type)->update([
             'is_default' => true,
+            'confirmed_at' => now(),
+            'last_used_at' => now(),
+
         ]);
     }
 

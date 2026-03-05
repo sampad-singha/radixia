@@ -17,6 +17,15 @@ class MultiFactorController extends Controller
         private readonly AccessTokenRepositoryInterface $tokens, // Need this to issue
     ) {}
 
+    public function getAvailableMethods(): JsonResponse
+    {
+        $methods = $this->mfaService->getAvailableMethods(auth()->user());
+
+        return response()->json([
+            'data' => ['methods' => $methods]
+        ]);
+    }
+
     public function enable(Request $request): JsonResponse
     {
         $request->validate(['type' => 'required|string|in:totp,email']);

@@ -71,6 +71,8 @@ Route::prefix('auth')->group(function () {
         ->prefix('two-factor')
         ->group(function () {
 
+            Route::get('/', [MultiFactorController::class, 'getAvailableMethods']);
+
             // Enable/Confirm: Strict throttling to prevent code guessing
             Route::post('/enable', [MultiFactorController::class, 'enable']);
             Route::post('/confirm', [MultiFactorController::class, 'confirm'])
