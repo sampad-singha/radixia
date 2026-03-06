@@ -146,6 +146,7 @@ class AuthController extends Controller
 
     public function getSudoUser(GetSudoUserRequest $request): JsonResponse
     {
+
         // Use the new service method
         $status = $this->auth->getSudoStatus($request->user());
 

@@ -91,12 +91,12 @@ readonly class MfaService implements MfaServiceInterface
         return [];
     }
 
-    /**
-     * @throws InvalidTwoFactorCodeException
-     */
     public function checkMfaRequirement(User $user, array $data): ?array
     {
-        $user->load('mfaMethods');
+        $x=$user->load(['mfaMethods' => function ($query) {
+            $query->whereNotNull('confirmed_at');
+        }]);
+
         $enabledMethods = $user->mfaMethods->pluck('type')->toArray();
 
         if (empty($enabledMethods)) {

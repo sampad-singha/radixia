@@ -107,6 +107,8 @@ readonly class AuthService implements AuthServiceInterface
         // 2. Check MFA
         $mfaResult = $this->mfaService->checkMfaRequirement($user, $data);
 
+        dd($mfaResult);
+
         if ($mfaResult) {
             // --- MISSING PART: Create Temp Token ---
             $tempToken = $this->tokens->create(
