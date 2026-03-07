@@ -35,7 +35,6 @@ jobs:
         run: |
           # Start MySQL and wait for it to be ready
           docker compose up -d --wait mysql
-
           # Run the test container
           # --build: Forces Docker to use your updated Dockerfile (with PCOV)
           # --rm: Cleans up the container after running
@@ -49,7 +48,6 @@ jobs:
             php artisan migrate --force && 
             php artisan test --coverage-clover=coverage.xml
           "
-
       - name: Fix Coverage Paths
         # Removes the Docker path so SonarCloud can find the files in the repo
         run: sed -i 's|/var/www/html/||g' coverage.xml
