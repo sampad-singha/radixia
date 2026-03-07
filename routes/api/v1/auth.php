@@ -80,9 +80,10 @@ Route::prefix('auth')->group(function () {
 
             Route::delete('/', [MultiFactorController::class, 'disable'])
                 ->middleware(['sudo']);
-            Route::get('/recovery-codes', [MultiFactorController::class, 'recoveryCodes']);
+            Route::get('/recovery-codes', [MultiFactorController::class, 'recoveryCodes'])
+                ->middleware(['sudo', 'throttle:5,1']);
             Route::post('/recovery-codes', [MultiFactorController::class, 'regenerateRecoveryCodes'])
-                ->middleware('throttle:5,1');
+                ->middleware(['sudo', 'throttle:5,1']);
         });
 
     // ---------------------------------------------------------------------

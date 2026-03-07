@@ -16,12 +16,15 @@ class EnsureEmailIsVerifiedApi
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user() ||
+        if (!$request->user() ||
             ($request->user() instanceof MustVerifyEmail &&
-                ! $request->user()->hasVerifiedEmail())) {
+                !$request->user()->hasVerifiedEmail())) {
 
             // Standard JSON response for API
-            return response()->json(['message' => 'Your email address is not verified.', 'code' => 'EMAIL_NOT_VERIFIED'], 401);
+            return response()->json([
+                'message' => 'Your email address is not verified.',
+                'code' => 'EMAIL_NOT_VERIFIED'
+            ], 401);
         }
 
         return $next($request);

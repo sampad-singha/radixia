@@ -93,14 +93,20 @@ readonly class MfaService implements MfaServiceInterface
 
     public function checkMfaRequirement(User $user, array $data): ?array
     {
-        $x=$user->load(['mfaMethods' => function ($query) {
+        $user->load(['mfaMethods' => function ($query) {
             $query->whereNotNull('confirmed_at');
         }]);
 
         $enabledMethods = $user->mfaMethods->pluck('type')->toArray();
 
         if (empty($enabledMethods)) {
-            return null; // Proceed
+            return [
+                'mfa_required' => false,
+                'available_methods' => [],
+                'challenge_sent' => false,
+                'message' => 'Two-factor authentication not enabled.'
+            ];
+//            return null;
         }
 
         // Validate requested type against enabled methods

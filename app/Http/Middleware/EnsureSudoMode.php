@@ -2,14 +2,18 @@
 
 namespace App\Http\Middleware;
 
+use App\Domain\Auth\Services\AuthServiceInterface;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\Response;
 
-class EnsureSudoMode
+readonly class EnsureSudoMode
 {
+    public function __construct(
+        private AuthServiceInterface $authService
+    ) {}
     /**
      * Handle an incoming request.
      *
@@ -17,6 +21,13 @@ class EnsureSudoMode
      */
     public function handle(Request $request, Closure $next): Response
     {
+        $user = $request->user();
+        $result = $user
+            ? $this->authService->getSudoStatus($user)
+            : [];
+
+        $methods = $result['available_methods'] ?? [];
+
         /** @var PersonalAccessToken $token */
         $token = $request->user()?->currentAccessToken();
 
@@ -27,7 +38,8 @@ class EnsureSudoMode
 
             return response()->json([
                 'message' => 'Sudo mode required.',
-                'code' => 'SUDO_REQUIRED' // Frontend listens for this code
+                'code' => 'SUDO_REQUIRED', // Frontend listens for this code
+                'available_methods' => $methods
             ], 423); // 423 Locked
         }
 

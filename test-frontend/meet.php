@@ -4,13 +4,62 @@
     <meta charset="UTF-8">
     <title>LMS Classroom - Moderator</title>
     <style>
-        body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; background: #f0f2f5; }
-        .main-content { flex: 1; display: flex; flex-direction: column; position: relative; }
-        #classroom-viewport { flex: 1; background: #000; display: flex; align-items: center; justify-content: center; padding: 20px; position: relative; }
-        #jaas-container { width: 100%; max-width: 1200px; aspect-ratio: 16/9; background: #111; }
-        #welcome-ui { position: absolute; background: white; padding: 3rem; border-radius: 12px; text-align: center; }
-        button { padding: 12px 24px; font-size: 1rem; cursor: pointer; }
-        #end-class-btn { display:none; position:absolute; right:20px; top:20px; background:#dc2626; color:white; border:none; border-radius:6px; }
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            background: #f0f2f5;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        #classroom-viewport {
+            flex: 1;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        #jaas-container {
+            width: 100%;
+            max-width: 1200px;
+            aspect-ratio: 16/9;
+            background: #111;
+        }
+
+        #welcome-ui {
+            position: absolute;
+            background: white;
+            padding: 3rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        #end-class-btn {
+            display: none;
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 6px;
+        }
     </style>
 </head>
 <body>
@@ -55,7 +104,7 @@
 
             if (!res.ok) throw new Error("Failed to fetch join data.");
 
-            const { data: meetingData } = await res.json();
+            const {data: meetingData} = await res.json();
 
             welcomeUi.style.display = "none";
 
@@ -89,13 +138,13 @@
             });
 
             // Track connected participants
-            api.addEventListener("participantJoined", ({ id }) => {
+            api.addEventListener("participantJoined", ({id}) => {
                 if (!participants.includes(id)) {
                     participants.push(id);
                 }
             });
 
-            api.addEventListener("participantLeft", ({ id }) => {
+            api.addEventListener("participantLeft", ({id}) => {
                 participants = participants.filter(pid => pid !== id);
             });
 

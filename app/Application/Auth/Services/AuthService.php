@@ -107,9 +107,7 @@ readonly class AuthService implements AuthServiceInterface
         // 2. Check MFA
         $mfaResult = $this->mfaService->checkMfaRequirement($user, $data);
 
-        dd($mfaResult);
-
-        if ($mfaResult) {
+        if ($mfaResult['mfa_required']) {
             // --- MISSING PART: Create Temp Token ---
             $tempToken = $this->tokens->create(
                 $user,
@@ -213,7 +211,7 @@ readonly class AuthService implements AuthServiceInterface
 
         // Success: Extend Sudo Mode
         $token = $this->tokens->current($user);
-        $this->tokens->setSudoExpiration($token, config('auth.password_timeout', 10800));
+        $this->tokens->setSudoExpiration($token, config('auth.password_timeout', 900));
     }
 
 
