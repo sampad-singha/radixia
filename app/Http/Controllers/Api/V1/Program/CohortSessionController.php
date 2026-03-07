@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Program;
 
+use App\Domain\Programs\Entities\Cohort;
 use App\Domain\Programs\Entities\CohortSession;
 use App\Domain\Programs\Services\CohortSessionServiceInterface;
 use App\Http\Controllers\Controller;
@@ -17,6 +18,13 @@ class CohortSessionController extends Controller
     public function __construct(
         private readonly CohortSessionServiceInterface $sessionService
     ) {}
+
+    public function listSessionsByCohort(Cohort $cohort)
+    {
+        $sessions = $this->sessionService->listSessionsByCohort($cohort->id);
+
+        return CohortSessionResource::collection($sessions);
+    }
 
     public function show(string $id)
     {

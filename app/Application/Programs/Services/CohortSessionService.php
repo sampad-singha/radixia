@@ -2,6 +2,7 @@
 
 namespace App\Application\Programs\Services;
 
+use App\Domain\Meetings\Services\MeetingCommandServiceInterface;
 use App\Domain\Meetings\Services\MeetRoomAccessServiceInterface;
 use App\Domain\Programs\Entities\CohortSession;
 use App\Domain\Programs\Enums\SessionStatus;
@@ -14,19 +15,33 @@ use App\Domain\Programs\Exceptions\RestrictedStatusException;
 use App\Domain\Programs\Exceptions\SessionOutsideCohortRangeException;
 use App\Domain\Programs\Repositories\CohortRepositoryInterface;
 use App\Domain\Programs\Repositories\CohortSessionRepositoryInterface;
+use App\Domain\Programs\Services\CohortSessionAttendanceServiceInterface;
 use App\Domain\Programs\Services\CohortSessionServiceInterface;
+use App\Jobs\CompleteCohortSessionJob;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use RuntimeException;
+use Throwable;
 
 readonly class CohortSessionService implements CohortSessionServiceInterface
 {
     public function __construct(
         private CohortSessionRepositoryInterface $sessionRepo,
         private CohortRepositoryInterface        $cohortRepo,
-        private MeetRoomAccessServiceInterface   $meetService
+        private MeetRoomAccessServiceInterface   $meetService,
+        private MeetingCommandServiceInterface   $commandService,
+        private CohortSessionAttendanceServiceInterface $attendanceService,
     )
     {
+    }
+
+    public function listSessionsByCohort(string $cohortId): Collection
+    {
+        return $this->sessionRepo->findByCohort($cohortId);
     }
 
     /**
@@ -65,7 +80,7 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
             throw new CohortNotFoundException();
         }
 
-        // Parse session datetimes
+        // Parse session datetime
         $sessionStartDate = Carbon::parse($data['starts_at'])->toDateString();
         $sessionEndDate   = Carbon::parse($data['ends_at'])->toDateString();
 
@@ -150,6 +165,7 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
 
     /**
      * @throws RestrictedStatusException
+     * @throws Throwable
      */
     public function markSessionCompleted(CohortSession $session): CohortSession
     {
@@ -171,9 +187,19 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
             );
         }
 
-        return $this->sessionRepo->update($session, [
+        // Get Room ID and Destroy Meeting Room
+        if (!$session->room_id) {
+            throw new RuntimeException('Session has no room assigned.');
+        }
+
+        //TODO: Later will update based on both manual trigger or CRON job after session end time
+        $this->sessionRepo->update($session, [
             'status' => SessionStatus::COMPLETED,
         ]);
+
+        CompleteCohortSessionJob::dispatch($session->id);
+
+        return $session->fresh();
     }
 
     /**
@@ -218,6 +244,10 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
         }
 
         $status = $this->resolveStatus($session);
+
+        if ($status === SessionStatus::COMPLETED) {
+            throw new MeetingAccessRestrictedException('Session has already been completed.');
+        }
 
         if (!in_array($status, [SessionStatus::LIVE, SessionStatus::SCHEDULED,], true)) {
             throw new MeetingAccessRestrictedException('Session is not live or scheduled.');

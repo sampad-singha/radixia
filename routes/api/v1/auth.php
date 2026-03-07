@@ -71,6 +71,8 @@ Route::prefix('auth')->group(function () {
         ->prefix('two-factor')
         ->group(function () {
 
+            Route::get('/', [MultiFactorController::class, 'getAvailableMethods']);
+
             // Enable/Confirm: Strict throttling to prevent code guessing
             Route::post('/enable', [MultiFactorController::class, 'enable']);
             Route::post('/confirm', [MultiFactorController::class, 'confirm'])
@@ -78,9 +80,10 @@ Route::prefix('auth')->group(function () {
 
             Route::delete('/', [MultiFactorController::class, 'disable'])
                 ->middleware(['sudo']);
-            Route::get('/recovery-codes', [MultiFactorController::class, 'recoveryCodes']);
+            Route::get('/recovery-codes', [MultiFactorController::class, 'recoveryCodes'])
+                ->middleware(['sudo', 'throttle:5,1']);
             Route::post('/recovery-codes', [MultiFactorController::class, 'regenerateRecoveryCodes'])
-                ->middleware('throttle:5,1');
+                ->middleware(['sudo', 'throttle:5,1']);
         });
 
     // ---------------------------------------------------------------------

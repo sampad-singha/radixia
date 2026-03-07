@@ -18,6 +18,7 @@ class MfaMethod extends Model
         'secret',
         'backup_codes',
         'is_default',
+        'confirmed_at',
         'last_used_at',
     ];
 
@@ -30,6 +31,7 @@ class MfaMethod extends Model
         'data' => 'array',
         'is_default' => 'boolean',
         'last_used_at' => 'datetime',
+        'confirmed_at' => 'datetime',
 
         'secret' => 'encrypted:array',
         'backup_codes' => 'encrypted:array',

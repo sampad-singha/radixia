@@ -35,7 +35,7 @@ class VerifyTwoFactorAuthentication extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Verify Your Login')
+            ->subject('Verify Your 2FA')
             ->line('Please use the following code to complete your two-factor authentication:')
             ->line($this->code)
             ->line('This code is valid for 10 minutes.')

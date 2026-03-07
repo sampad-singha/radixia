@@ -6,6 +6,7 @@ use App\Domain\Mfa\Factories\MfaFactoryInterface;
 use App\Domain\Mfa\Providers\MfaProviderInterface;
 use App\Infrastructure\Mfa\Providers\EmailMfaProvider;
 use App\Infrastructure\Mfa\Providers\TotpMfaProvider;
+use App\Models\User;
 use InvalidArgumentException;
 
 readonly class MfaFactory implements MfaFactoryInterface
@@ -22,5 +23,13 @@ readonly class MfaFactory implements MfaFactoryInterface
             'totp'  => $this->totpProvider,
             default => throw new InvalidArgumentException("Unsupported MFA type: {$type}"),
         };
+    }
+
+    public function supportedMethods(User $user): array
+    {
+        return $user->mfaMethods()
+            ->select('type', 'confirmed_at', 'is_default')
+            ->get()
+            ->toArray();
     }
 }

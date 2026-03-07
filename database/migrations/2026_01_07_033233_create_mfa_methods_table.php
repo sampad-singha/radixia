@@ -21,6 +21,7 @@ return new class extends Migration
             $table->text('backup_codes')->nullable(); // Encrypted JSON array
 
             $table->boolean('is_default')->default(false);
+            $table->timestamp('confirmed_at')->nullable();
             $table->timestamp('last_used_at')->nullable();
             $table->timestamps();
 

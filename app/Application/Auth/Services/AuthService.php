@@ -2,12 +2,9 @@
 
 namespace App\Application\Auth\Services;
 
-use App\Application\Mfa\Services\MfaService;
 use App\Domain\Auth\Exceptions\EmailAlreadyVerifiedException;
 use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
-use App\Domain\Auth\Exceptions\InvalidResetClientException;
-use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
 use App\Domain\Auth\Exceptions\PasswordAlreadySetException;
 use App\Domain\Auth\Exceptions\PasswordChangeException;
 use App\Domain\Auth\Exceptions\PasswordConfirmationException;
@@ -110,7 +107,7 @@ readonly class AuthService implements AuthServiceInterface
         // 2. Check MFA
         $mfaResult = $this->mfaService->checkMfaRequirement($user, $data);
 
-        if ($mfaResult) {
+        if ($mfaResult['mfa_required']) {
             // --- MISSING PART: Create Temp Token ---
             $tempToken = $this->tokens->create(
                 $user,
@@ -141,9 +138,6 @@ readonly class AuthService implements AuthServiceInterface
         }
     }
 
-    /**
-     * @throws InvalidResetClientException
-     */
     public function forgotPassword(array $data, ?string $origin): string
     {
         $allowedOrigins = config('auth.allowed_origins', []);
@@ -217,7 +211,7 @@ readonly class AuthService implements AuthServiceInterface
 
         // Success: Extend Sudo Mode
         $token = $this->tokens->current($user);
-        $this->tokens->setSudoExpiration($token, config('auth.password_timeout', 10800));
+        $this->tokens->setSudoExpiration($token, config('auth.password_timeout', 900));
     }
 
 

@@ -44,4 +44,13 @@ return [
     */
     'secret' => env('JITSI_APP_SECRET'),
 
+    /*|--------------------------------------------------------------------------
+     | Jitsi Webhook Secret
+     |--------------------------------------------------------------------------
+     | Used to verify incoming webhook signatures
+     */
+    'webhook_secret' => env('JAAS_WEBHOOK_SECRET'),
+
+    'command_url' => env('JITSI_COMMAND_URL', 'https://8x8.vc/v1/_jaas/conference-commands/v1/meeting'),
+
 ];

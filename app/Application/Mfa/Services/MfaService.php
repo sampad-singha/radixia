@@ -15,6 +15,11 @@ readonly class MfaService implements MfaServiceInterface
         private MfaFactoryInterface $mfaFactory
     ) {}
 
+    public function getAvailableMethods(User $user): array
+    {
+        return $this->mfaFactory->supportedMethods($user);
+    }
+
     public function enable(User $user, string $type): array
     {
         $provider = $this->mfaFactory->make($type);
@@ -36,6 +41,9 @@ readonly class MfaService implements MfaServiceInterface
 
         $user->mfaMethods()->where('type', $type)->update([
             'is_default' => true,
+            'confirmed_at' => now(),
+            'last_used_at' => now(),
+
         ]);
     }
 
@@ -83,16 +91,21 @@ readonly class MfaService implements MfaServiceInterface
         return [];
     }
 
-    /**
-     * @throws InvalidTwoFactorCodeException
-     */
     public function checkMfaRequirement(User $user, array $data): ?array
     {
-        $user->load('mfaMethods');
+        $user->load(['mfaMethods' => function ($query) {
+            $query->whereNotNull('confirmed_at');
+        }]);
+
         $enabledMethods = $user->mfaMethods->pluck('type')->toArray();
 
         if (empty($enabledMethods)) {
-            return null; // Proceed
+            return [
+                'mfa_required' => false,
+                'available_methods' => [],
+                'challenge_sent' => false,
+                'message' => 'Two-factor authentication not enabled.'
+            ];
         }
 
         // Validate requested type against enabled methods
