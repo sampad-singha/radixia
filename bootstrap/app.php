@@ -3,67 +3,412 @@
 use App\Domain\Auth\Exceptions\EmailAlreadyVerifiedException;
 use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
+use App\Domain\Auth\Exceptions\InvalidResetClientException;
+use App\Domain\Auth\Exceptions\PasswordAlreadySetException;
+use App\Domain\Auth\Exceptions\PasswordNotSetException;
+use App\Domain\Auth\Exceptions\SocialProviderException;
+use App\Domain\Auth\Exceptions\InvalidTwoFactorCodeException;
+use App\Domain\Auth\Exceptions\PasswordChangeException;
 use App\Domain\Auth\Exceptions\PasswordConfirmationException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
 use App\Domain\Auth\Exceptions\PasswordResetLinkException;
+use App\Domain\Auth\Exceptions\SocialEmailRequiredException;
+use App\Domain\Auth\Exceptions\TwoFactorNotConfirmedException;
+use App\Domain\Auth\Exceptions\TwoFactorNotEnabledException;
+use App\Domain\Auth\Exceptions\TwoFactorRequiredException;
+use App\Domain\Instructors\Exceptions\InstructorProfileAlreadyExistsException;
+use App\Domain\Instructors\Exceptions\InstructorProfileNotFoundException;
+use App\Domain\Mfa\Exceptions\InvalidTotpCodeException;
+use App\Domain\Programs\Exceptions\ActiveCohortsException;
+use App\Domain\Programs\Exceptions\CohortEnrollmentNotFoundException;
+use App\Domain\Programs\Exceptions\CohortNotEmptyException;
+use App\Domain\Programs\Exceptions\CohortNotFoundException;
+use App\Domain\Programs\Exceptions\CohortOverLimitException;
+use App\Domain\Programs\Exceptions\CohortSessionNotFoundException;
+use App\Domain\Programs\Exceptions\CohortUpdateException;
+use App\Domain\Programs\Exceptions\FieldRestrictedException;
+use App\Domain\Programs\Exceptions\ImmutableFieldException;
+use App\Domain\Programs\Exceptions\InvalidModuleException;
+use App\Domain\Programs\Exceptions\InvalidSessionTimeException;
+use App\Domain\Programs\Exceptions\LessonNotFoundException;
+use App\Domain\Programs\Exceptions\MeetingAccessRestrictedException;
+use App\Domain\Programs\Exceptions\ModuleNotFoundException;
+use App\Domain\Programs\Exceptions\ProgramIntegrityException;
+use App\Domain\Programs\Exceptions\ProgramNotFoundException;
+use App\Domain\Programs\Exceptions\RestrictedStatusException;
+use App\Domain\Programs\Exceptions\SessionOutsideCohortRangeException;
+use App\Domain\Users\Exceptions\InvalidEmailChangeTokenException;
+use App\Http\Middleware\EnsureEmailIsVerifiedApi;
 use App\Http\Middleware\EnsureSudoMode;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Password;
+use Laravel\Sanctum\Http\Middleware\CheckAbilities;
+use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
-        commands: __DIR__.'/../routes/console.php',
+        web: __DIR__ . '/../routes/web.php',
+        api: __DIR__ . '/../routes/api.php',
+        commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'sudo' => EnsureSudoMode::class,
+            'verified' => EnsureEmailIsVerifiedApi::class,
+            'ability' => CheckForAnyAbility::class,
+            'abilities' => CheckAbilities::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (ValidationException $e, Request $request) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'code' => 'VALIDATION_ERROR',
+                'errors' => $e->errors(),
+            ], 422);
+        });
+
         $exceptions->render(function (InvalidCredentialsException $e, $request) {
             return response()->json([
                 'message' => $e->getMessage(),
-                'errors' => (object) [],
+                'code' => 'INVALID_CREDENTIALS',
+                'errors' => (object)[],
             ], 401);
         });
-        $exceptions->render(function (PasswordResetLinkException $e, Request $request) {
+
+        $exceptions->render(function (PasswordResetLinkException $e) {
+
+            return match ($e->brokerStatus()) {
+                Password::RESET_THROTTLED => response()->json([
+                    'message' => 'Too many reset requests. Please try again later.',
+                    'code' => 'PASSWORD_RESET_LINK_THROTTLED',
+                ], 429),
+
+                Password::INVALID_USER => response()->json([
+                    'message' => 'If the email exists, a reset link will be sent.',
+                    'code' => 'PASSWORD_RESET_LINK_SENT',
+                ], 200), // To prevent revealing user existence
+
+                default => response()->json([
+                    'message' => 'Unable to send reset link.',
+                    'code' => 'PASSWORD_RESET_LINK_FAILED',
+                ], 400),
+            };
+        });
+
+        $exceptions->render(function (InvalidResetClientException $e, Request $request) {
             return response()->json([
-                'message' => 'Unable to send reset link.',
+                'message' => 'Invalid reset client.',
+                'code' => 'INVALID_RESET_CLIENT',
                 'error' => $e->getMessage()
             ], 400);
         });
 
-        $exceptions->render(function (PasswordResetException $e, Request $request) {
-            return response()->json([
-                'message' => 'Password reset failed.',
-                'error' => $e->getMessage()
-            ], 400);
+        $exceptions->render(function (PasswordResetException $e) {
+            return match ($e->brokerStatus()) {
+
+                Password::INVALID_TOKEN => response()->json([
+                    'message' => 'This password reset link is invalid or expired.',
+                    'code' => 'PASSWORD_RESET_TOKEN_INVALID',
+                ], 410),
+
+                Password::INVALID_USER => response()->json([
+                    'message' => 'User not found.',
+                    'code' => 'PASSWORD_RESET_USER_INVALID',
+                ], 404),
+
+                Password::RESET_THROTTLED => response()->json([
+                    'message' => 'Too many reset attempts.',
+                    'code' => 'PASSWORD_RESET_THROTTLED',
+                ], 429),
+
+                default => response()->json([
+                    'message' => 'Password reset failed.',
+                    'code' => 'PASSWORD_RESET_FAILED',
+                ], 410),
+            };
         });
 
         $exceptions->render(function (EmailVerificationException $e, Request $request) {
             return response()->json([
                 'message' => $e->getMessage(),
-            ], 400);
+                'code' => "EMAIL_VERIFICATION_LINK_INVALID",
+            ], 410);
         });
 
         $exceptions->render(function (EmailAlreadyVerifiedException $e, Request $request) {
             return response()->json([
                 'message' => $e->getMessage(),
+                'code' => "EMAIL_ALREADY_VERIFIED",
             ], 409);
         });
 
         $exceptions->render(function (PasswordConfirmationException $e, Request $request) {
             return response()->json([
                 'message' => $e->getMessage(),
+                'code' => "PASSWORD_MISMATCH",
                 'errors' => [
                     'password' => [$e->getMessage()]
                 ]
+            ], 422);
+        });
+
+        $exceptions->render(function (TwoFactorRequiredException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => "TWO_FACTOR_REQUIRED",
+                'two_factor_required' => true,
+            ], 423);
+        });
+
+        $exceptions->render(function (InvalidTwoFactorCodeException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => "INVALID_TWO_FACTOR_CODE",
+                'errors' => [
+                    'two_factor_code' => [$e->getMessage()]
+                ]
+            ], 422);
+        });
+
+        $exceptions->render(function (TwoFactorNotConfirmedException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                "code" => "TWO_FACTOR_NOT_CONFIRMED",
+                'errors' => [
+                    'two_factor_status' => [$e->getMessage()]
+                ]
+            ], 409);
+        });
+
+        $exceptions->render(function (TwoFactorNotEnabledException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                "code" => "TWO_FACTOR_NOT_ENABLED",
+                'errors' => [
+                    'two_factor_status' => [$e->getMessage()]
+                ]
+            ], 409);
+        });
+
+        $exceptions->render(function (InvalidEmailChangeTokenException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => 'INVALID_EMAIL_VERIFICATION_TOKEN',
+                'errors' => [
+                    'verification_code' => [$e->getMessage()]
+                ]
+            ], 422);
+        });
+
+        $exceptions->render(function (PasswordChangeException $e, Request $request) {
+            return response()->json([
+                'message' => 'Password change failed.',
+                'code' => 'PASSWORD_CHANGE_FAILED',
+                'error' => $e->getMessage(),
+            ], 400);
+        });
+
+        $exceptions->render(function (SocialProviderException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => $e->errorCode,
             ], $e->getCode());
+        });
+
+        $exceptions->render(function (SocialEmailRequiredException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => 'EMAIL_REQUIRED',
+                'data' => $e->providerUser,
+            ], 422);
+        });
+
+        $exceptions->render(function (PasswordAlreadySetException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => 'PASSWORD_ALREADY_SET',
+            ], 409);
+        });
+
+        $exceptions->render(function (PasswordNotSetException $e, Request $request) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'code' => 'PASSWORD_NOT_SET',
+            ], 400);
+        });
+
+        $exceptions->render(function (InstructorProfileNotFoundException $e, Request $request) {
+            return response()->json([
+                'message' => 'Instructor profile not found.',
+                'code' => 'INSTRUCTOR_PROFILE_NOT_FOUND',
+                'error' => $e->getMessage()
+            ], 404);
+        });
+
+        $exceptions->render(function (InstructorProfileAlreadyExistsException $e, Request $request) {
+            return response()->json([
+                'message' => 'Instructor profile already exists.',
+                'code' => 'INSTRUCTOR_PROFILE_ALREADY_EXISTS',
+                'error' => $e->getMessage()
+            ], 409);
+        });
+
+        $exceptions->render(function (InvalidTotpCodeException $e, Request $request) {
+            return response()->json([
+                'message' => 'The provided two-factor authentication code is invalid.',
+                'code' => 'INVALID_TOTP_CODE',
+                'error' => $e->getMessage()
+            ], 422);
+        });
+
+        $exceptions->render(function (ActiveCohortsException $e, Request $request) {
+            return response()->json([
+                'message' => 'Archive Failed',
+                'code' => 'ACTIVE_COHORTS_REMAINING',
+                'error' => $e->getMessage()
+            ], 422);
+        });
+
+        $exceptions->render(function (CohortEnrollmentNotFoundException $e, Request $request) {
+            return response()->json([
+                'message' => 'Resource Not Found',
+                'code' => 'ENROLLMENT_NOT_FOUND',
+                'error' => $e->getMessage()
+            ], 404);
+        });
+
+        $exceptions->render(function (CohortNotEmptyException $e, Request $request) {
+            return response()->json([
+                'message' => 'Deletion Conflict',
+                'code' => 'COHORT_NOT_EMPTY',
+                'error' => $e->getMessage()
+            ], 422);
+        });
+
+        $exceptions->render(function (CohortNotFoundException $e, Request $request) {
+            return response()->json([
+                'message' => 'Resource Not Found',
+                'code' => 'COHORT_NOT_FOUND',
+                'error' => $e->getMessage()
+            ], 404);
+        });
+
+        $exceptions->render(function (CohortOverLimitException $e, Request $request) {
+            return response()->json([
+                'message' => 'Capacity Exceeded',
+                'code' => 'COHORT_FULL',
+                'error' => $e->getMessage()
+            ], 409);
+        });
+
+        $exceptions->render(function (CohortUpdateException $e, Request $request) {
+            return response()->json([
+                'message' => 'Business Rule Violation',
+                'code' => 'COHORT_UPDATE_FAILED',
+                'error' => $e->getMessage()
+            ], 422);
+        });
+
+        $exceptions->render(function (FieldRestrictedException $e, Request $request) {
+            return response()->json([
+                'message' => 'Integrity Violation',
+                'code' => 'LOCKED_FIELD_MODIFICATION',
+                'error' => $e->getMessage()
+            ], 422);
+        });
+
+        $exceptions->render(function (InvalidModuleException $e, Request $request) {
+            return response()->json([
+                'message' => 'Resource Invalid',
+                'code' => 'INVALID_MODULE_REFERENCE',
+                'error' => $e->getMessage()
+            ], 404);
+        });
+
+        $exceptions->render(function (LessonNotFoundException $e, Request $request) {
+            return response()->json([
+                'message' => 'Resource Not Found',
+                'code' => 'LESSON_NOT_FOUND',
+                'error' => $e->getMessage()
+            ], 404);
+        });
+
+        $exceptions->render(function (ModuleNotFoundException $e, Request $request) {
+            return response()->json([
+                'message' => 'Resource Not Found',
+                'code' => 'MODULE_NOT_FOUND',
+                'error' => $e->getMessage()
+            ], 404);
+        });
+
+        $exceptions->render(function (ProgramIntegrityException $e, Request $request) {
+            return response()->json([
+                'message' => 'Integrity Violation',
+                'code' => 'PROGRAM_RESOURCE_MISMATCH',
+                'error' => $e->getMessage()
+            ], 404);
+        });
+
+        $exceptions->render(function (ProgramNotFoundException $e, Request $request) {
+            return response()->json([
+                'message' => 'Resource Not Found',
+                'code' => 'PROGRAM_NOT_FOUND',
+                'error' => $e->getMessage()
+            ], 404);
+        });
+
+        $exceptions->render(function (RestrictedStatusException $e, Request $request) {
+            return response()->json([
+                'message' => 'Status Lock Violation',
+                'code' => 'COHORT_STATUS_RESTRICTED',
+                'error' => $e->getMessage()
+            ], 422);
+        });
+
+        $exceptions->render(function (SessionOutsideCohortRangeException $e, Request $request) {
+            return response()->json([
+                'message' => 'Session outside date range.',
+                'code' => 'SESSION_OUTSIDE_COHORT_RANGE',
+                'error' => $e->getMessage()
+            ], 422);
+        });
+
+        $exceptions->render(function (MeetingAccessRestrictedException $e, Request $request) {
+            return response()->json([
+                'message' => 'Cannot join meeting.',
+                'code' => 'MEETING_ACCESS_RESTRICTED',
+                'error' => $e->getMessage()
+            ], 403);
+        });
+
+        $exceptions->render(function (InvalidSessionTimeException $e, Request $request) {
+            return response()->json([
+                'message' => 'Invalid session time.',
+                'code' => 'INVALID_SESSION_TIME',
+                'error' => $e->getMessage()
+            ], 422);
+        });
+
+        $exceptions->render(function (ImmutableFieldException $e, Request $request) {
+            return response()->json([
+                'message' => 'Immutable fields provided.',
+                'code' => 'IMMUTABLE_FIELD_PROVIDED',
+                'error' => $e->getMessage()
+            ], 422);
+        });
+
+        $exceptions->render(function (CohortSessionNotFoundException $e, Request $request) {
+            return response()->json([
+                'message' => 'Cohort session not found.',
+                'code' => 'COHORT_SESSION_NOT_FOUND',
+                'error' => $e->getMessage()
+            ], 422);
         });
 
     })->create();

@@ -110,6 +110,14 @@ return [
     |
     */
 
-    'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+    'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 900),
+
+    'allowed_origins' => [
+        'http://localhost:3000',
+        'https://app.radixia.com',
+        'https://admin.radixia.com',
+    ],
+
+    'email_change_timeout' => env('AUTH_EMAIL_CHANGE_TIMEOUT', 60),
 
 ];

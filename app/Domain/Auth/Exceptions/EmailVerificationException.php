@@ -8,6 +8,6 @@ class EmailVerificationException extends Exception
 {
     public function __construct()
     {
-        parent::__construct('Invalid or expired verification link.', 400);
+        parent::__construct('Invalid or expired verification link.');
     }
 }

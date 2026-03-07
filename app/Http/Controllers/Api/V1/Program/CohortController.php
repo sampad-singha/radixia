@@ -1,0 +1,100 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1\Program;
+
+use App\Domain\Programs\Entities\Cohort;
+use App\Domain\Programs\Services\CohortServiceInterface;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Program\CreateCohortRequest;
+use App\Http\Requests\Api\V1\Program\UpdateCohortRequest;
+use Gate;
+use Throwable;
+
+class CohortController extends Controller
+{
+    public function __construct(
+        private readonly CohortServiceInterface $cohortService
+    )
+    {}
+
+    public function listCohortsByProgram(string $programId)
+    {
+        $cohorts = $this->cohortService->listCohortsByProgram($programId);
+
+        return response()->json([
+            'cohorts' => $cohorts,
+        ]);
+    }
+
+    public function createCohort(CreateCohortRequest $request)
+    {
+        Gate::authorize('create', Cohort::class);
+
+        $data = $request->validated();
+
+        $cohort = $this->cohortService->createCohort($data);
+
+        return response()->json([
+            'message' => 'Cohort created successfully.',
+            'cohort' => $cohort,
+        ]);
+    }
+
+    public function getCohortDetails(string $id)
+    {
+        $cohort = $this->cohortService->getCohortDetails($id);
+
+        return response()->json([
+            'cohort' => $cohort,
+        ]);
+    }
+
+    public function updateCohort(string $cohortId, UpdateCohortRequest $request)
+    {
+        $cohort = $this->cohortService->findCohortById($cohortId);
+
+        Gate::authorize('update', $cohort);
+
+        $data = $request->validated();
+
+        $cohort = $this->cohortService->updateCohort($cohort, $data);
+
+        return response()->json([
+            'message' => 'Cohort updated successfully.',
+            'cohort' => $cohort,
+        ]);
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function deleteCohort(string $id)
+    {
+        $cohort = $this->cohortService->findCohortById($id);
+
+        Gate::authorize('delete', $cohort);
+
+        $this->cohortService->deleteCohort($cohort);
+
+        return response()->json([
+            'message' => 'Cohort and associated sessions successfully archived.'
+        ]);
+    }
+
+    /**
+     * Restore a soft-deleted cohort.
+     * @throws Throwable
+     */
+    public function restoreCohort(string $id)
+    {
+        $cohort = $this->cohortService->findCohortWithTrashed($id);
+
+        Gate::authorize('restore', $cohort);
+
+        $this->cohortService->restoreCohort($cohort);
+
+        return response()->json([
+            'message' => 'Cohort and all history successfully restored.'
+        ]);
+    }
+}

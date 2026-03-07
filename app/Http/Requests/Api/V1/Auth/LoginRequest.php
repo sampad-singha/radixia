@@ -23,9 +23,15 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'email'       => ['required', 'string', 'email'],
+            'password'    => ['required', 'string'],
             'device_name' => ['required', 'string', 'max:120'],
+
+            // RENAME 'two_factor_code' to 'mfa_code' to match Service
+            'mfa_code'    => ['nullable', 'string'],
+
+            // ADD 'mfa_type' so users can switch methods (e.g. 'totp' vs 'email')
+            'mfa_type'    => ['nullable', 'string'],
         ];
     }
 }

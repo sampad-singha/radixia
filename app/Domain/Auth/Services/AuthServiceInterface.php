@@ -6,21 +6,17 @@ use App\Models\User;
 
 interface AuthServiceInterface
 {
-    public function register(array $data): array;
-    public function login(array $data): array;
+    public function register(array $data, ?string $ip, ?string $userAgent): array;
+    public function login(array $data,  ?string $ip, ?string $userAgent): array;
     public function logout(User $user): void;
-    public function forgotPassword(array $data): string;
+    public function forgotPassword(array $data, ?string $origin): string;
     public function resetPassword(array $data): string;
-    public function verifyEmail(int $id, string $hash): bool;
+    public function verifyEmail(string $id, string $hash): bool;
     public function resendVerificationNotification(User $user): void;
-
-    /**
-     * Verify password and enable Sudo Mode for the current token.
-     */
-    public function confirmPassword(User $user, string $password): bool;
-
-    /**
-     * Check if Sudo Mode is active for the current token.
-     */
-    public function passwordConfirmedStatus(User $user): bool;
+    public function confirmSudoMode(User $user, string $type, string $value): void;
+    public function getSudoStatus(User $user): array;
+    public function listSessions(User $user): array;
+    public function revokeSession(User $user, string $tokenId): void;
+    public function revokeOtherSessions(User $user): void;
+    public function changePassword(User $user, string $currentPassword, string $newPassword): void;
 }

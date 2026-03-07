@@ -5,12 +5,17 @@ namespace App\Application\Auth\Services;
 use App\Domain\Auth\Exceptions\EmailAlreadyVerifiedException;
 use App\Domain\Auth\Exceptions\EmailVerificationException;
 use App\Domain\Auth\Exceptions\InvalidCredentialsException;
+use App\Domain\Auth\Exceptions\PasswordAlreadySetException;
+use App\Domain\Auth\Exceptions\PasswordChangeException;
 use App\Domain\Auth\Exceptions\PasswordConfirmationException;
+use App\Domain\Auth\Exceptions\PasswordNotSetException;
 use App\Domain\Auth\Exceptions\PasswordResetException;
-use App\Domain\Auth\Exceptions\PasswordResetLinkException;
+use App\Domain\Auth\Repositories\AccessTokenRepositoryInterface;
 use App\Domain\Auth\Services\AuthServiceInterface;
+use App\Domain\Mfa\Services\MfaServiceInterface;
 use App\Domain\Users\Repositories\UserRepositoryInterface;
 use App\Models\User;
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Contracts\Auth\PasswordBroker;
@@ -18,24 +23,33 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 use Laravel\Fortify\Contracts\ResetsUserPasswords;
-use Laravel\Sanctum\PersonalAccessToken;
+use Throwable;
 
-class AuthService implements AuthServiceInterface
+readonly class AuthService implements AuthServiceInterface
 {
     public function __construct(
-        private readonly UserRepositoryInterface $users,
-        private readonly CreatesNewUsers $createsNewUsers,
-        private readonly ResetsUserPasswords $resetsUserPasswords,
-        private readonly PasswordBroker $passwordBroker
-    ) {}
+        private UserRepositoryInterface        $users,
+        private AccessTokenRepositoryInterface $tokens,
+        private CreatesNewUsers                $createsNewUsers,
+        private ResetsUserPasswords            $resetsUserPasswords,
+        private PasswordBroker                 $passwordBroker,
+        private MfaServiceInterface            $mfaService,
+    )
+    {
+    }
 
-    public function register(array $data): array
+    public function register(array $data, ?string $ip, ?string $userAgent): array
     {
         $user = $this->createsNewUsers->create($data);
 
         event(new Registered($user));
 
-        $token = $user->createToken($data['device_name'])->plainTextToken;
+        $token = $this->tokens->create(
+            $user,
+            $data['device_name'],
+            $ip,
+            $userAgent
+        );
 
         return ['user' => $user, 'token' => $token];
     }
@@ -43,22 +57,14 @@ class AuthService implements AuthServiceInterface
     /**
      * @throws EmailVerificationException
      */
-    public function verifyEmail(int $id, string $hash): bool
+    public function verifyEmail(string $id, string $hash): bool
     {
         $user = $this->users->findById($id);
 
-        $emailForVerification = $user
-            ? $user->getEmailForVerification()
-            : 'email_verification_dummy_value';
+        $emailForVerification = $user ? $user->getEmailForVerification() : 'email_verification_dummy_value';
+        $expectedHash = hash('sha256', $emailForVerification);
 
-        $expectedHash = sha1($emailForVerification);
-
-        $hashMatches = hash_equals(
-            $expectedHash,
-            (string) $hash
-        );
-
-        if (! $user || ! $hashMatches) {
+        if (!$user || !hash_equals($expectedHash, (string)$hash)) {
             throw new EmailVerificationException();
         }
 
@@ -66,9 +72,10 @@ class AuthService implements AuthServiceInterface
             return true;
         }
 
-        if ($user->markEmailAsVerified()) {
-            event(new Verified($user));
-        }
+        // use repository to persist email verification
+        $this->users->markEmailVerified($user);
+
+        event(new Verified($user));
 
         return true;
     }
@@ -87,37 +94,76 @@ class AuthService implements AuthServiceInterface
 
     /**
      * @throws InvalidCredentialsException
+     * @throws Throwable
      */
-    public function login(array $data): array
+    public function login(array $data, ?string $ip, ?string $userAgent): array
     {
+        // 1. Credentials Check
         $user = $this->users->findByEmail($data['email']);
-
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
+        if (!$user || !Hash::check($data['password'], $user->password)) {
             throw new InvalidCredentialsException();
         }
 
-        $token = $user->createToken($data['device_name'])->plainTextToken;
+        // 2. Check MFA
+        $mfaResult = $this->mfaService->checkMfaRequirement($user, $data);
+
+        if ($mfaResult['mfa_required']) {
+            // --- MISSING PART: Create Temp Token ---
+            $tempToken = $this->tokens->create(
+                $user,
+                'login-mfa-pending', // Name matters!
+                $ip,
+                $userAgent,
+                ['mfa:verify']  // Ability to identify this as a temp token
+            );
+
+            // Add token to result so Controller can send it
+            $mfaResult['token'] = $tempToken;
+            return $mfaResult;
+        }
+
+        // 3. Issue Token
+        $token = $this->tokens->create($user, $data['device_name'], $ip, $userAgent);
+        $user->unsetRelation('mfaMethods');
 
         return ['user' => $user, 'token' => $token];
     }
 
     public function logout(User $user): void
     {
-        $user->currentAccessToken()?->delete();
+        $currentToken = $this->tokens->current($user);
+
+        if ($currentToken) {
+            $this->tokens->revoke($user, (string)$currentToken->id);
+        }
     }
 
-    /**
-     * @throws PasswordResetLinkException
-     */
-    public function forgotPassword(array $data): string
+    public function forgotPassword(array $data, ?string $origin): string
     {
-        $status = $this->passwordBroker->sendResetLink(['email' => $data['email']]);
+        $allowedOrigins = config('auth.allowed_origins', []);
 
-        if ($status !== Password::RESET_LINK_SENT) {
-            throw new PasswordResetLinkException(__($status));
+        // If origin is valid, use it. Otherwise, fallback to default frontend URL.
+        $baseUrl = ($origin && in_array($origin, $allowedOrigins))
+            ? $origin
+            : config('app.frontend_url');
+
+        // 2. Get the user
+        $user = $this->users->findByEmail($data['email']);
+
+        if (!$user) {
+            return Password::RESET_LINK_SENT;
         }
 
-        return __($status);
+        // 3. Generate Token
+        $token = Password::broker()->createToken($user);
+
+        // 4. Build URL (Assume '/reset-password' path is standard for all frontends)
+        $url = $baseUrl . '/reset-password?token=' . urlencode($token) . '&email=' . urlencode($user->email);
+
+        // 5. Send Notification
+        $user->notify(new ResetPasswordNotification($url));
+
+        return Password::RESET_LINK_SENT;
     }
 
     /**
@@ -128,12 +174,17 @@ class AuthService implements AuthServiceInterface
         $status = $this->passwordBroker->reset(
             $data,
             function ($user, $password) {
-                $this->resetsUserPasswords->reset($user, ['password' => $password]);
+                $this->resetsUserPasswords->reset($user, [
+                    'password' => $password,
+                    'password_confirmation' => $password,
+                ]);
+
+                $this->tokens->revokeAll($user);
             }
         );
 
         if ($status !== Password::PASSWORD_RESET) {
-            throw new PasswordResetException(__($status));
+            throw new PasswordResetException($status);
         }
 
         return __($status);
@@ -141,38 +192,112 @@ class AuthService implements AuthServiceInterface
 
     /**
      * @throws PasswordConfirmationException
+     * @throws PasswordNotSetException
      */
-    public function confirmPassword(User $user, string $password): bool
+    public function confirmSudoMode(User $user, string $type, string $value): void
     {
-        if (! Hash::check($password, $user->password)) {
+        if ($type === 'password') {
+            if (!$user->is_password_set) {
+                throw new PasswordNotSetException();
+            }
+            if (!$user->password || !Hash::check($value, $user->password)) {
+                throw new PasswordConfirmationException();
+            }
+        } else {
+            // Re-use your MFA verification logic
+            // This validates the code AND that the method is enabled for the user
+            $this->mfaService->verifyMfaChallenge($user, $value, $type);
+        }
+
+        // Success: Extend Sudo Mode
+        $token = $this->tokens->current($user);
+        $this->tokens->setSudoExpiration($token, config('auth.password_timeout', 900));
+    }
+
+
+    public function getSudoStatus(User $user): array
+    {
+        $isSudo = $this->tokens->isSudoActive($user);
+
+        if ($isSudo) {
+            return ['confirmed' => true];
+        }
+
+        // If not sudo, calculate available methods
+        $methods = [];
+
+        // 1. Password available?
+        if ($user->is_password_set && $user->password) {
+            $methods[] = 'password';
+        }
+
+        // 2. MFA methods available?
+        $user->load('mfaMethods');
+        $mfaMethods = $user->mfaMethods->pluck('type')->toArray();
+
+        $methods = array_merge($methods, $mfaMethods);
+
+        if (empty($methods)) {
+            $methods[] = 'email';
+        }
+
+        return [
+            'confirmed' => false,
+            'available_methods' => array_unique($methods)
+        ];
+    }
+
+    public function listSessions(User $user): array
+    {
+        return $this->tokens->list($user);
+    }
+
+    public function revokeSession(User $user, string $tokenId): void
+    {
+        $this->tokens->revoke($user, $tokenId);
+    }
+
+    public function revokeOtherSessions(User $user): void
+    {
+        $current = $this->tokens->current($user);
+
+        if (!$current) {
+            return;
+        }
+
+        $this->tokens->revokeOthers($user, (int)$current->id);
+    }
+
+    /**
+     * @throws PasswordConfirmationException
+     * @throws PasswordChangeException
+     */
+    public function changePassword(User $user, string $currentPassword, string $newPassword): void
+    {
+        if (!Hash::check($currentPassword, $user->password)) {
             throw new PasswordConfirmationException();
         }
 
-        // Get the specific token used for this request
-        /** @var PersonalAccessToken $token */
-        $token = $user->currentAccessToken();
-
-        // If no token (e.g., testing or cookie session), you might handle differently
-        // But for API strict mode:
-        if ($token instanceof PersonalAccessToken) {
-            $token->forceFill([
-                'sudo_expires_at' => now()->addSeconds(config('auth.password_timeout', 600)),
-            ])->save();
+        if (Hash::check($newPassword, $user->password)) {
+            throw new PasswordChangeException("New password cannot be the same as your current password.");
         }
 
-        return true;
+        $this->users->updatePassword($user, $newPassword);
+        $user->tokens()->delete();
     }
 
-    public function passwordConfirmedStatus(User $user): bool
+    /**
+     * @throws PasswordAlreadySetException
+     */
+    public function setPassword(User $user, string $password): void
     {
-        /** @var PersonalAccessToken $token */
-        $token = $user->currentAccessToken();
-
-        if (! $token instanceof PersonalAccessToken) {
-            return false;
+        if ($user->is_password_set) {
+            throw new PasswordAlreadySetException("User already has a password.");
         }
 
-        // Check if timestamp exists and is in the future
-        return $token->sudo_expires_at && $token->sudo_expires_at->isFuture();
+        $user->forceFill([
+            'password' => Hash::make($password),
+            'is_password_set' => true,
+        ])->save();
     }
 }
