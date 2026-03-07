@@ -114,13 +114,16 @@ class AuthServiceTest extends TestCase
 
         $this->userRepo->shouldReceive('findByEmail')->andReturn($user);
 
-        // Mock Hash check
         Hash::shouldReceive('check')->with('password', $user->password)->andReturn(true);
 
-        // Mock MFA check (Return NULL when no MFA is required, based on your code)
         $this->mfaService->shouldReceive('checkMfaRequirement')
             ->with($user, $data)
-            ->andReturn(null);
+            ->andReturn([
+                'mfa_required' => false,
+                'available_methods' => [],
+                'challenge_sent' => false,
+                'message' => 'Two-factor authentication not enabled.'
+            ]);
 
         $this->tokenRepo->shouldReceive('create')->andReturn('valid-token');
 

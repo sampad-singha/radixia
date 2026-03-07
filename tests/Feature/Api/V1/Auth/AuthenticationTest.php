@@ -178,6 +178,7 @@ class AuthenticationTest extends TestCase
         MfaMethod::factory()->create([
             'user_id' => $user->id,
             'type' => 'totp',
+            'confirmed_at' => now(),
         ]);
 
         $response = $this->postJson('/api/v1/auth/login', [
@@ -188,12 +189,15 @@ class AuthenticationTest extends TestCase
 
         // FIX 2: Expect 423 (Locked) instead of 200
         $response->assertStatus(423)
-            ->assertJson([
-                'message' => 'Two-factor authentication required.', // <--- Updated string
-                'mfa_required' => true
+            ->assertJsonPath('data.message', 'Two-factor authentication required.')
+            ->assertJsonPath('data.mfa_required', true)
+            ->assertJsonStructure([
+                'data' => [
+                    'token',
+                    'available_methods',
+                    'challenge_sent'
+                ]
             ]);
-
-        $this->assertArrayNotHasKey('token', $response->json('data') ?? []);
     }
 
     public function test_confirm_sudo_password()

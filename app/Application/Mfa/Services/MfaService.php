@@ -106,7 +106,6 @@ readonly class MfaService implements MfaServiceInterface
                 'challenge_sent' => false,
                 'message' => 'Two-factor authentication not enabled.'
             ];
-//            return null;
         }
 
         // Validate requested type against enabled methods
