@@ -76,6 +76,7 @@ class AuthController extends Controller
                     'message' => $result['message'],
                     'mfa_required' => true,
                     'available_methods' => $result['available_methods'] ?? [],
+                    'default_method' => $result['default_method'] ?? null,
                     'challenge_sent' => $result['challenge_sent'] ?? false, // Frontend needs this to know if it should expect a code immediately
                     'token' => $result['token'],
                 ],

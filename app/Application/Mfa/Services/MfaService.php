@@ -97,12 +97,15 @@ readonly class MfaService implements MfaServiceInterface
             $query->whereNotNull('confirmed_at');
         }]);
 
+        $defaultMethod = $user->mfaMethods->firstWhere('is_default', true)?->type;
+
         $enabledMethods = $user->mfaMethods->pluck('type')->toArray();
 
         if (empty($enabledMethods)) {
             return [
                 'mfa_required' => false,
                 'available_methods' => [],
+                'default_method' => null,
                 'challenge_sent' => false,
                 'message' => 'Two-factor authentication not enabled.'
             ];
@@ -130,6 +133,7 @@ readonly class MfaService implements MfaServiceInterface
         return [
             'mfa_required' => true,
             'available_methods' => $enabledMethods,
+            'default_method' => $defaultMethod,
             'challenge_sent' => $challengeSent,
             'message' => $challengeSent
                 ? "Challenge sent via {$requestedType}."
