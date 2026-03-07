@@ -14,7 +14,7 @@ class SocialAccountFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'provider' => 'google',
+            'provider_name' => 'google',
             'provider_id' => $this->faker->unique()->numerify('##########'),
             'avatar' => $this->faker->imageUrl(),
             'token' => $this->faker->sha256(),

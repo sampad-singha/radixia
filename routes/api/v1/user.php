@@ -39,7 +39,9 @@ Route::prefix('user')->middleware(['auth:sanctum', 'ability:access-api'])->group
     // ---------------------------------------------------------------------
     // Test / Debug Routes
     // ---------------------------------------------------------------------
-    Route::middleware(['verified', 'sudo'])->get('test', function () {
-        return response()->json(['message' => 'Email Verified & Sudo Active, access granted.']);
-    });
+    if (App::environment(['local', 'testing'])) {
+        Route::middleware(['verified', 'sudo'])->get('test', function () {
+            return response()->json(['message' => 'Email Verified & Sudo Active, access granted.']);
+        });
+    }
 });

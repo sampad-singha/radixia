@@ -26,7 +26,11 @@ class UpdateProgramRequest extends FormRequest
         return [
             'title' => 'required|string|max:255',
             'change_slug' => 'required|boolean',
-            Rule::unique('programs', 'slug')->ignore($this->route('program')),
+            'slug' => [
+                'nullable',
+                'string',
+                Rule::unique('programs', 'slug')->ignore($this->route('program')),
+            ],
             'description' => 'nullable|string',
             'short_description' => 'nullable|string|max:500',
             'level' => 'required|string|in:beginner,intermediate,advanced',

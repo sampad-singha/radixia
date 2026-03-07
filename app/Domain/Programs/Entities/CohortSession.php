@@ -3,7 +3,7 @@
 namespace App\Domain\Programs\Entities;
 
 use App\Domain\Programs\Enums\SessionStatus;
-use Database\Factories\LessonFactory;
+use Database\Factories\CohortSessionFactory;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -76,8 +76,8 @@ class CohortSession extends Model
         return $this->hasMany(CohortSessionAttendanceLog::class);
     }
 
-    protected static function newFactory(): LessonFactory
+    protected static function newFactory(): CohortSessionFactory
     {
-        return LessonFactory::new();
+        return CohortSessionFactory::new();
     }
 }

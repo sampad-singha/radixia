@@ -28,8 +28,8 @@ class CreateCohortRequest extends FormRequest
             'name' => 'required|string|max:255',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
-            'capacity' => 'nullable|integer|min:1',
-            'price' => 'nullable|numeric|min:0',
+            'capacity' => 'required|integer|min:1',
+            'price' => 'required|numeric|min:0',
         ];
     }
 }
