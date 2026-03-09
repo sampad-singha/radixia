@@ -6,6 +6,7 @@ use App\Domain\Auth\Services\SocialAuthServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\SocialLoginRequest;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class SocialAuthController extends Controller
 {
@@ -24,6 +25,7 @@ class SocialAuthController extends Controller
 
         // 2. Construct the exact Redirect URI expected by the Provider
         $redirectUrl = "{$baseUrl}/auth/{$provider}/callback";
+        $redirectUrl = $request->query('redirect_uri', $redirectUrl);
 
         $result = $this->service->handleProviderCallback(
             $provider,

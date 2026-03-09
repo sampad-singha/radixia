@@ -128,14 +128,15 @@ readonly class SocialAuthService implements SocialAuthServiceInterface
         // 1. Check MFA
         $mfaResult = $this->mfaService->checkMfaRequirement($user, request()->all());
 
-        if ($mfaResult) {
+        if ($mfaResult && ($mfaResult['mfa_required'] ?? false)) {
             // Create Temp Token for Social Flow
             $tempToken = $this->tokens->create(
                 $user,
                 'social-mfa-pending',
                 request()->ip(),
                 request()->userAgent(),
-                ['mfa:verify']);
+                ['mfa:verify']
+            );
             $mfaResult['token'] = $tempToken;
             return $mfaResult;
         }
