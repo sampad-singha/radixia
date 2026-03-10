@@ -37,10 +37,24 @@ class SanctumAccessTokenRepository implements AccessTokenRepositoryInterface
 
     public function list(User $user): array
     {
+        $currentToken = $this->current($user);
+        $currentTokenId = $currentToken?->id;
+
         return $user->tokens()
             ->select(['id', 'name', 'ip_address', 'user_agent', 'last_used_at', 'created_at'])
             ->orderByDesc('last_used_at')
             ->get()
+            ->map(function ($token) use ($currentTokenId) {
+                return [
+                    'id' => $token->id,
+                    'name' => $token->name,
+                    'ip_address' => $token->ip_address,
+                    'user_agent' => $token->user_agent,
+                    'last_used_at' => $token->last_used_at,
+                    'created_at' => $token->created_at,
+                    'current' => $token->id === $currentTokenId,
+                ];
+            })
             ->toArray();
     }
 
