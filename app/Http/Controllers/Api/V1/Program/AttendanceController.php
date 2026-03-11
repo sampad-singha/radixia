@@ -12,9 +12,11 @@ use App\Models\User;
 class AttendanceController extends Controller
 {
     public function __construct(
-        private readonly CohortAttendanceServiceInterface $cohortAttendanceService,
+        private readonly CohortAttendanceServiceInterface        $cohortAttendanceService,
         private readonly CohortSessionAttendanceServiceInterface $sessionAttendanceService
-    ) {}
+    )
+    {
+    }
 
     /**
      * Attendance for a single session
@@ -70,6 +72,20 @@ class AttendanceController extends Controller
         $summary = $this->cohortAttendanceService
             ->getCohortAttendanceSummary($cohort);
 
+
+        return response()->json($summary);
+    }
+
+    /**
+     * Session attendance summary
+     */
+    public function getSessionSummary(CohortSession $session)
+    {
+        $cohort = $session->cohort;
+        $this->authorize('viewAttendance', $cohort);
+
+        $summary = $this->cohortAttendanceService
+            ->getSessionAttendanceSummary($session);
 
         return response()->json($summary);
     }

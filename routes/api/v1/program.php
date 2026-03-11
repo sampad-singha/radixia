@@ -118,6 +118,7 @@ Route::middleware(['auth:sanctum', 'ability:access-api'])->group(function () {
 
     Route::prefix('attendance')->group(function () {
         Route::get('sessions/{session}', [AttendanceController::class, 'getSessionAttendance']);
+        Route::get('sessions/{session}/summary', [AttendanceController::class, 'getSessionSummary']);
         Route::get('cohorts/{cohort}', [AttendanceController::class, 'getCohortAttendance']);
         Route::get('cohorts/{cohort}/students/{user}', [AttendanceController::class, 'getStudentAttendance']);
         Route::get('cohorts/{cohort}/summary', [AttendanceController::class, 'getCohortSummary']);

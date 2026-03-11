@@ -4,9 +4,14 @@ namespace Database\Seeders;
 
 use App\Domain\Programs\Entities\Cohort;
 use App\Domain\Programs\Entities\CohortEnrollment;
+use App\Domain\Programs\Entities\CohortSession;
+use App\Domain\Programs\Entities\CohortSessionAttendanceLog;
+use App\Domain\Programs\Entities\CohortSessionParticipantInterval;
+use App\Domain\Programs\Entities\CohortSessionStat;
 use App\Domain\Programs\Entities\Lesson;
 use App\Domain\Programs\Entities\Module;
 use App\Domain\Programs\Entities\Program;
+use App\Domain\Programs\Enums\SessionStatus;
 use App\Domain\Users\Entities\UserProfile;
 use App\Infrastructure\Authorization\PermissionRegistrar;
 use App\Models\User;
@@ -139,6 +144,107 @@ class DatabaseSeeder extends Seeder
             'activated_at' => now(), // Matches your CohortEnrollment entity logic
         ]);
 
-        $this->command->info('Seeding completed successfully.');
+        // --------------------------------------------------
+// 7. Create Cohort Sessions
+// --------------------------------------------------
+
+        $session1 = CohortSession::create([
+            'cohort_id' => $cohort->id,
+            'lesson_id' => $lesson->id,
+            'starts_at' => now()->subHours(3),
+            'ends_at' => now()->subHours(2),
+            'room_id' => 'room-' . Str::uuid(),
+            'recording_url' => 'https://videos.radixia.test/recording1.mp4',
+            'status' => SessionStatus::COMPLETED
+        ]);
+
+        $session2 = CohortSession::create([
+            'cohort_id' => $cohort->id,
+            'lesson_id' => $lesson->id,
+            'starts_at' => now()->subDays(1)->subHours(2),
+            'ends_at' => now()->subDays(1)->subHour(),
+            'room_id' => 'room-' . Str::uuid(),
+            'recording_url' => 'https://videos.radixia.test/recording2.mp4',
+            'status' => SessionStatus::COMPLETED
+        ]);
+
+
+// --------------------------------------------------
+// 8. Participant Intervals (simulate meeting join/leave)
+// --------------------------------------------------
+
+        $start1 = now()->subHours(3)->valueOf();
+        $end1 = now()->subHours(2)->valueOf();
+
+        CohortSessionParticipantInterval::create([
+            'cohort_session_id' => $session1->id,
+            'participant_id' => 'instructor-1',
+            'user_id' => $instructor->id,
+            'is_moderator' => true,
+            'joined_at' => $start1,
+            'left_at' => $end1,
+            'duration_ms' => $end1 - $start1
+        ]);
+
+        CohortSessionParticipantInterval::create([
+            'cohort_session_id' => $session1->id,
+            'participant_id' => 'student-1',
+            'user_id' => $student->id,
+            'is_moderator' => false,
+            'joined_at' => $start1 + 300000,
+            'left_at' => $end1 - 200000,
+            'duration_ms' => ($end1 - 200000) - ($start1 + 300000)
+        ]);
+
+        CohortSessionParticipantInterval::create([
+            'cohort_session_id' => $session1->id,
+            'participant_id' => 'student-2',
+            'user_id' => $student2->id,
+            'is_moderator' => false,
+            'joined_at' => $start1 + 500000,
+            'left_at' => $end1 - 100000,
+            'duration_ms' => ($end1 - 100000) - ($start1 + 500000)
+        ]);
+
+
+// --------------------------------------------------
+// 9. Session Stats
+// --------------------------------------------------
+
+        $totalMeetingMs = $end1 - $start1;
+
+        CohortSessionStat::create([
+            'cohort_session_id' => $session1->id,
+            'total_meeting_ms' => $totalMeetingMs,
+            'instructor_active_ms' => $totalMeetingMs,
+            'finalized' => true
+        ]);
+
+
+// --------------------------------------------------
+// 10. Attendance Logs
+// --------------------------------------------------
+
+        CohortSessionAttendanceLog::create([
+            'cohort_session_id' => $session1->id,
+            'user_id' => $student->id,
+            'student_active_ms' => $totalMeetingMs * 0.85,
+            'student_instructor_overlap_ms' => $totalMeetingMs * 0.8,
+            'ratio_total' => 0.85,
+            'ratio_instructor' => 0.8,
+            'attended' => true
+        ]);
+
+        CohortSessionAttendanceLog::create([
+            'cohort_session_id' => $session1->id,
+            'user_id' => $student2->id,
+            'student_active_ms' => $totalMeetingMs * 0.35,
+            'student_instructor_overlap_ms' => $totalMeetingMs * 0.30,
+            'ratio_total' => 0.35,
+            'ratio_instructor' => 0.30,
+            'attended' => false
+        ]);
+
+        $this->command->info('Sessions and attendance seeded.');
     }
 }

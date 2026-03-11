@@ -3,6 +3,7 @@
 namespace App\Application\Programs\Services;
 
 use App\Domain\Programs\Entities\Cohort;
+use App\Domain\Programs\Entities\CohortSession;
 use App\Domain\Programs\Entities\CohortSessionAttendanceLog;
 use App\Domain\Programs\Services\CohortAttendanceServiceInterface;
 use App\Domain\Programs\Services\CohortSessionAttendanceServiceInterface;
@@ -12,19 +13,21 @@ use Illuminate\Support\Facades\Cache;
 
 readonly class CohortAttendanceService implements CohortAttendanceServiceInterface
 {
+    const CACHE_TTL = 3600; // 1 hour in seconds
+
     public function __construct(
         private CohortSessionAttendanceServiceInterface $sessionAttendanceService
     ) {}
     public function getAttendanceForCohort(Cohort $cohort): Collection
     {
-        $cacheKey = "cohort_attendance_sessions_{$cohort->id}";
+        $cacheKey = "cohort_attendance_sessions_$cohort->id";
 
         return Cache::tags([
-            "cohort_{$cohort->id}",
+            "cohort_$cohort->id",
             "cohort_attendance"
         ])->remember(
             $cacheKey,
-            CohortSessionAttendanceService::CACHE_TTL,
+            self::CACHE_TTL,
             function () use ($cohort) {
 
                 return $cohort->sessions
@@ -45,15 +48,15 @@ readonly class CohortAttendanceService implements CohortAttendanceServiceInterfa
     public function getAttendanceForStudent(Cohort $cohort, User $user): array
     {
         $userId = $user->id;
-        $cacheKey = "cohort_student_attendance_{$cohort->id}_{$userId}";
+        $cacheKey = "cohort_student_attendance_{$cohort->id}_$userId";
 
         return Cache::tags([
-            "cohort_{$cohort->id}",
-            "student_{$userId}",
+            "cohort_$cohort->id",
+            "student_$userId",
             "cohort_attendance"
         ])->remember(
             $cacheKey,
-            CohortSessionAttendanceService::CACHE_TTL,
+            self::CACHE_TTL,
             function () use ($cohort, $userId) {
 
                 $logs = CohortSessionAttendanceLog::query()
@@ -98,14 +101,14 @@ readonly class CohortAttendanceService implements CohortAttendanceServiceInterfa
 
     public function getStudentAttendanceSummaryForCohort(Cohort $cohort): array
     {
-        $cacheKey = "cohort_student_summary_{$cohort->id}";
+        $cacheKey = "cohort_student_summary_$cohort->id";
 
         return Cache::tags([
-            "cohort_{$cohort->id}",
+            "cohort_$cohort->id",
             "cohort_attendance"
         ])->remember(
             $cacheKey,
-            CohortSessionAttendanceService::CACHE_TTL,
+            self::CACHE_TTL,
             function () use ($cohort) {
 
                 $logs = CohortSessionAttendanceLog::query()
@@ -146,29 +149,35 @@ readonly class CohortAttendanceService implements CohortAttendanceServiceInterfa
 
     public function getCohortAttendanceSummary(Cohort $cohort): array
     {
-        $cacheKey = "cohort_attendance_summary_{$cohort->id}";
+        $cacheKey = "cohort_attendance_summary_$cohort->id";
 
         return Cache::tags([
-            "cohort_{$cohort->id}",
+            "cohort_$cohort->id",
             "cohort_attendance"
         ])->remember(
             $cacheKey,
-            CohortSessionAttendanceService::CACHE_TTL,
+            self::CACHE_TTL,
             function () use ($cohort) {
-
-                $logs = CohortSessionAttendanceLog::query()
-                    ->whereHas('cohortSession', fn ($q) =>
-                    $q->where('cohort_id', $cohort->id)
-                    )
-                    ->get();
 
                 $totalSessions = $cohort->sessions()->count();
 
-                $students = $logs->groupBy('user_id');
+                $students = $cohort->enrollments()
+                    ->where('status', 'active')
+                    ->pluck('user_id');
 
                 $totalStudents = $students->count();
 
-                $attendancePerStudent = $students->map(function ($studentLogs) use ($totalSessions) {
+                $logs = CohortSessionAttendanceLog::query()
+                    ->whereIn('user_id', $students)
+                    ->whereHas('cohortSession', fn ($q) =>
+                    $q->where('cohort_id', $cohort->id)
+                    )
+                    ->get()
+                    ->groupBy('user_id');
+
+                $attendancePerStudent = $students->map(function ($userId) use ($logs, $totalSessions) {
+
+                    $studentLogs = $logs->get($userId, collect());
 
                     $attendedSessions = $studentLogs
                         ->where('attended', true)
@@ -179,7 +188,7 @@ readonly class CohortAttendanceService implements CohortAttendanceServiceInterfa
                         : 0;
 
                     return [
-                        'user_id' => $studentLogs->first()->user_id,
+                        'user_id' => $userId,
                         'sessions_attended' => $attendedSessions,
                         'attendance_ratio' => $attendanceRatio,
                     ];
@@ -197,6 +206,56 @@ readonly class CohortAttendanceService implements CohortAttendanceServiceInterfa
                     'total_sessions' => $totalSessions,
                     'average_attendance_ratio' => round($averageAttendance ?? 0, 4),
                     'students_below_threshold' => $studentsBelowThreshold,
+                ];
+            }
+        );
+    }
+
+    public function getSessionAttendanceSummary(CohortSession $session): array
+    {
+        $cacheKey = "session_attendance_summary_{$session->id}";
+
+        return Cache::tags([
+            "cohort_{$session->cohort_id}",
+            "session_{$session->id}",
+            "cohort_attendance"
+        ])->remember(
+            $cacheKey,
+            CohortSessionAttendanceService::CACHE_TTL,
+            function () use ($session) {
+
+                $studentIds = $session->cohort
+                    ->enrollments()
+                    ->where('status', 'active')
+                    ->pluck('user_id');
+
+                $totalStudents = $studentIds->count();
+
+                $logs = CohortSessionAttendanceLog::query()
+                    ->where('cohort_session_id', $session->id)
+                    ->whereIn('user_id', $studentIds)   // ensure only enrolled students
+                    ->get();
+
+                $attendedStudents = $logs
+                    ->where('attended', true)
+                    ->count();
+
+                $attendanceRatio = $totalStudents
+                    ? $attendedStudents / $totalStudents
+                    : 0;
+
+                $averageStudentPresence = $logs->avg('ratio_total') ?? 0;
+
+                $averageInstructorOverlap = $logs->avg('ratio_instructor') ?? 0;
+
+                return [
+                    'session_id' => $session->id,
+                    'cohort_id' => $session->cohort_id,
+                    'total_students' => $totalStudents,
+                    'students_attended' => $attendedStudents,
+                    'attendance_ratio' => round($attendanceRatio, 4),
+                    'average_student_presence_ratio' => round($averageStudentPresence, 4),
+                    'average_instructor_overlap_ratio' => round($averageInstructorOverlap, 4),
                 ];
             }
         );
