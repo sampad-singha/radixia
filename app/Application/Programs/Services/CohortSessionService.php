@@ -2,7 +2,6 @@
 
 namespace App\Application\Programs\Services;
 
-use App\Domain\Meetings\Services\MeetingCommandServiceInterface;
 use App\Domain\Meetings\Services\MeetRoomAccessServiceInterface;
 use App\Domain\Programs\Entities\CohortSession;
 use App\Domain\Programs\Enums\SessionStatus;
@@ -15,14 +14,11 @@ use App\Domain\Programs\Exceptions\RestrictedStatusException;
 use App\Domain\Programs\Exceptions\SessionOutsideCohortRangeException;
 use App\Domain\Programs\Repositories\CohortRepositoryInterface;
 use App\Domain\Programs\Repositories\CohortSessionRepositoryInterface;
-use App\Domain\Programs\Services\CohortSessionAttendanceServiceInterface;
 use App\Domain\Programs\Services\CohortSessionServiceInterface;
 use App\Jobs\CompleteCohortSessionJob;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
@@ -33,8 +29,6 @@ readonly class CohortSessionService implements CohortSessionServiceInterface
         private CohortSessionRepositoryInterface $sessionRepo,
         private CohortRepositoryInterface        $cohortRepo,
         private MeetRoomAccessServiceInterface   $meetService,
-        private MeetingCommandServiceInterface   $commandService,
-        private CohortSessionAttendanceServiceInterface $attendanceService,
     )
     {
     }
