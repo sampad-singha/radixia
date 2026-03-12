@@ -144,9 +144,17 @@ class DatabaseSeeder extends Seeder
             'activated_at' => now(), // Matches your CohortEnrollment entity logic
         ]);
 
+        // 6. Create Enrollment
+        CohortEnrollment::create([
+            'user_id' => $student2->id,
+            'cohort_id' => $cohort->id,
+            'status' => 'active',
+            'activated_at' => now(), // Matches your CohortEnrollment entity logic
+        ]);
+
         // --------------------------------------------------
-// 7. Create Cohort Sessions
-// --------------------------------------------------
+        // 7. Create Cohort Sessions
+        // --------------------------------------------------
 
         $session1 = CohortSession::create([
             'cohort_id' => $cohort->id,
@@ -169,9 +177,9 @@ class DatabaseSeeder extends Seeder
         ]);
 
 
-// --------------------------------------------------
-// 8. Participant Intervals (simulate meeting join/leave)
-// --------------------------------------------------
+        // --------------------------------------------------
+        // 8. Participant Intervals (simulate meeting join/leave)
+        // --------------------------------------------------
 
         $start1 = now()->subHours(3)->valueOf();
         $end1 = now()->subHours(2)->valueOf();
@@ -207,9 +215,9 @@ class DatabaseSeeder extends Seeder
         ]);
 
 
-// --------------------------------------------------
-// 9. Session Stats
-// --------------------------------------------------
+        // --------------------------------------------------
+        // 9. Session Stats
+        // --------------------------------------------------
 
         $totalMeetingMs = $end1 - $start1;
 
@@ -221,9 +229,9 @@ class DatabaseSeeder extends Seeder
         ]);
 
 
-// --------------------------------------------------
-// 10. Attendance Logs
-// --------------------------------------------------
+        // --------------------------------------------------
+        // 10. Attendance Logs
+        // --------------------------------------------------
 
         CohortSessionAttendanceLog::create([
             'cohort_session_id' => $session1->id,
