@@ -5,4 +5,5 @@ return [
     App\Providers\FortifyServiceProvider::class,
     App\Infrastructure\Programs\Providers\ProgramServiceProvider::class,
     App\Infrastructure\Meetings\Providers\MeetingServiceProvider::class,
+    App\Infrastructure\Catalog\Providers\CatalogServiceProvider::class,
 ];

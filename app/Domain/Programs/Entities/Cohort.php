@@ -14,17 +14,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
-* @property string $id
-* @property string $program_id
-* @property string $assigned_instructor_id
-* @property string $name
-* @property DateTimeInterface $start_date
-* @property DateTimeInterface $end_date
-* @property int $capacity
-* @property float $price
-* @property CohortStatus $status
-**/
-
+ * @property string $id
+ * @property string $program_id
+ * @property string $assigned_instructor_id
+ * @property string $name
+ * @property DateTimeInterface $start_date
+ * @property DateTimeInterface $end_date
+ * @property int $capacity
+ * @property float $price
+ * @property CohortStatus $status
+ **/
 class Cohort extends Model
 {
     /** @use HasFactory<CohortFactory> */
@@ -47,7 +46,7 @@ class Cohort extends Model
         'capacity' => 'integer',
         'price' => 'decimal:2',
         'deleted_at' => 'datetime',
-        'status'     => CohortStatus::class,
+        'status' => CohortStatus::class,
     ];
 
     public function enrollments(): HasMany
@@ -76,4 +75,9 @@ class Cohort extends Model
 //        // Otherwise, run the query.
 //        return $this->enrollments_count ?? $this->enrollments()->count();
 //    }
+
+    public static function newFactory(): CohortFactory
+    {
+        return CohortFactory::new();
+    }
 }

@@ -253,6 +253,9 @@ class DatabaseSeeder extends Seeder
             'attended' => false
         ]);
 
+        //run ProgramSeeder.php
+        $this->call(ProgramSeeder::class);
+
         $this->command->info('Sessions and attendance seeded.');
     }
 }

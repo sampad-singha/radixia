@@ -5,8 +5,11 @@ namespace App\Infrastructure\Programs\Repositories;
 use App\Domain\Programs\Entities\Cohort;
 use App\Domain\Programs\Entities\Module;
 use App\Domain\Programs\Entities\Program;
+use App\Domain\Programs\Enums\CohortStatus;
 use App\Domain\Programs\Repositories\ProgramRepositoryInterface;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class ProgramRepository implements ProgramRepositoryInterface
 {
