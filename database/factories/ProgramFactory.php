@@ -35,7 +35,7 @@ class ProgramFactory extends Factory
                 'advanced'
             ]),
 
-            'thumbnail_url' => 'https://picsum.photos/seed/'.$this->faker->uuid.'/640/360',
+            'thumbnail_url' => 'https://x-picsum.photos/seed/'.$this->faker->uuid.'/640/360',
 
             'intro_video_url' => $this->faker->url(),
 

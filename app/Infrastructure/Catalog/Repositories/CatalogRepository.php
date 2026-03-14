@@ -35,13 +35,7 @@ class CatalogRepository implements CatalogRepositoryInterface
         return Program::query()
             ->with([
                 'instructor:id,name',
-                'topics:id,name',
-                'cohorts' => function ($query) {
-                    $query->whereIn('status', [
-                        CohortStatus::SCHEDULED,
-                        CohortStatus::ACTIVE
-                    ])->with('instructor:id,name');
-                }
+                'topics:id,name'
             ])
             ->select([
                 'programs.*',
@@ -66,7 +60,7 @@ class CatalogRepository implements CatalogRepositoryInterface
                     ->selectRaw('COUNT(cohort_enrollments.id)');
             }, 'enrollments_count')
             ->withMin([
-                'cohorts as cohort_price' => function ($query) {
+                'cohorts as price' => function ($query) {
                     $query->whereIn('status', [
                         CohortStatus::SCHEDULED,
                         CohortStatus::ACTIVE
@@ -106,19 +100,19 @@ class CatalogRepository implements CatalogRepositoryInterface
         }
 
         if (!empty($filters['price_min'])) {
-            $query->having('cohort_price', '>=', $filters['price_min']);
+            $query->having('price', '>=', $filters['price_min']);
         }
 
         if (!empty($filters['price_max'])) {
-            $query->having('cohort_price', '<=', $filters['price_max']);
+            $query->having('price', '<=', $filters['price_max']);
         }
 
         if (($filters['price_type'] ?? null) === 'free') {
-            $query->having('cohort_price', '=', 0);
+            $query->having('price', '=', 0);
         }
 
         if (($filters['price_type'] ?? null) === 'paid') {
-            $query->having('cohort_price', '>', 0);
+            $query->having('price', '>', 0);
         }
 
         if (!empty($filters['duration'])) {
@@ -136,8 +130,8 @@ class CatalogRepository implements CatalogRepositoryInterface
             }
         }
 
-        if (!empty($filters['type'])) {
-            $query->whereIn('type', $filters['type']);
+        if (!empty($filters['type']) && !in_array('program', (array)$filters['type'])) {
+            $query->whereRaw('1 = 0');
         }
     }
 
@@ -146,11 +140,11 @@ class CatalogRepository implements CatalogRepositoryInterface
         switch ($filters['sort'] ?? 'newest') {
 
             case 'price_low':
-                $query->orderBy('cohort_price', 'asc');
+                $query->orderBy('price', 'asc');
                 break;
 
             case 'price_high':
-                $query->orderBy('cohort_price', 'desc');
+                $query->orderBy('price', 'desc');
                 break;
 
             case 'popular':

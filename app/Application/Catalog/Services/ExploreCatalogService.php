@@ -18,8 +18,6 @@ readonly class ExploreCatalogService
 
         $paginator->getCollection()->transform(function ($item) {
 
-            $item->price = $item->cohort_price ?? 0;
-
             $item->duration_hours = round(
                 ($item->duration_minutes ?? 0) / 60,
                 1

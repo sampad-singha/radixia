@@ -51,8 +51,10 @@ class ProgramRepository implements ProgramRepositoryInterface
             ->where('id', $idOrSlug)
             ->orWhere('slug', $idOrSlug)
             ->with([
+                'instructor',
                 'modules' => fn($q) => $q->orderBy('order_index'),
-                'modules.lessons' => fn($q) => $q->orderBy('order_index')
+                'modules.lessons' => fn($q) => $q->orderBy('order_index'),
+                'cohorts' => fn($q) => $q->orderBy('start_date', 'desc'),
             ])
             ->first();
     }
