@@ -11,17 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('topics', function (Blueprint $table) {
+        Schema::create('content_blocks', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('subcategory_id')->constrained('subcategories')->cascadeOnDelete();
-            $table->string('name');
-            $table->string('slug')->unique(); // 'web-development'
-            $table->text('description')->nullable();
+
+            // Polymorphic owner (Program / Course / etc.)
+            $table->uuidMorphs('blockable');
+
+            // Block type
+            $table->string('type'); // learning_outcome | prerequisite | target_audience
+
+            // Content text
+            $table->text('content');
+
             $table->integer('order_index')->default(0);
-            $table->boolean('is_active')->default(true);
+
             $table->timestamps();
 
-            $table->index('subcategory_id');
+            $table->index('type');
         });
     }
 
@@ -30,6 +36,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('topics');
+        Schema::dropIfExists('content_blocks');
     }
 };

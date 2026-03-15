@@ -32,6 +32,8 @@ return new class extends Migration
             // Instructor (owner)
             $table->foreignUuid('instructor_id')->constrained('users')->onDelete('cascade');
 
+            $table->foreignUuid('language_id')->nullable()->constrained('languages')->nullOnDelete();
+
             $table->timestamps();
             $table->softDeletes();
 

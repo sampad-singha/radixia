@@ -2,6 +2,10 @@
 
 namespace App\Domain\Programs\Entities;
 
+use App\Domain\Taxonomy\Entities\ContentBlock;
+use App\Domain\Taxonomy\Entities\Feature;
+use App\Domain\Taxonomy\Entities\Language;
+use App\Domain\Taxonomy\Entities\Review;
 use App\Domain\Taxonomy\Entities\Topic;
 use App\Models\User;
 use Database\Factories\ProgramFactory;
@@ -11,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -40,6 +45,7 @@ class Program extends Model
         'intro_video_url',
         'status',
         'instructor_id',
+        'language_id',
     ];
 
     protected $casts = [
@@ -66,6 +72,28 @@ class Program extends Model
     public function modules(): HasMany
     {
         return $this->hasMany(Module::class);
+    }
+
+    public function reviews(): MorphMany
+    {
+        return $this->morphMany(Review::class, 'reviewable');
+    }
+
+    public function language(): BelongsTo
+    {
+        return $this->belongsTo(Language::class);
+    }
+
+    public function features(): MorphMany
+    {
+        return $this->morphMany(Feature::class, 'featureable')
+            ->orderBy('order_index');
+    }
+
+    public function contentBlocks(): MorphMany
+    {
+        return $this->morphMany(ContentBlock::class, 'blockable')
+            ->orderBy('order_index');
     }
 
     protected static function newFactory(): ProgramFactory
