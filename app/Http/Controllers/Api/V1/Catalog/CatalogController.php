@@ -33,4 +33,11 @@ class CatalogController extends Controller
 
         return response()->json(['data' => $data]);
     }
+
+    public function programDetails(string $slug)
+    {
+        $data = $this->explore->programDetails($slug);
+
+        return response()->json(['data' => $data]);
+    }
 }

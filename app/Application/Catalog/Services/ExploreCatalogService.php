@@ -3,7 +3,9 @@
 namespace App\Application\Catalog\Services;
 
 use App\Domain\Catalog\Repositories\CatalogRepositoryInterface;
+use App\Domain\Programs\Entities\Program;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 readonly class ExploreCatalogService
 {
@@ -30,5 +32,10 @@ readonly class ExploreCatalogService
         });
 
         return $paginator;
+    }
+
+    public function programDetails(string $slug): ?Program
+    {
+        return $this->catalog->programDetails($slug);
     }
 }

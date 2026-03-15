@@ -7,6 +7,7 @@ use App\Domain\Programs\Entities\Program;
 use App\Domain\Programs\Enums\CohortStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class CatalogRepository implements CatalogRepositoryInterface
@@ -28,6 +29,35 @@ class CatalogRepository implements CatalogRepositoryInterface
         $perPage = $filters['per_page'] ?? 12;
 
         return $query->paginate($perPage);
+    }
+
+    public function programDetails(string $slug): ?Program
+    {
+        return Program::query()
+            ->where('slug', $slug)
+            ->with([
+                'instructor',
+
+                'language',
+
+                'topics.subcategory.category',
+
+                'modules.lessons',
+
+                'cohorts' => function ($query) {
+                    $query->with([
+                        'enrollments',
+                        'instructor'
+                    ]);
+                },
+
+                'reviews.user',
+
+                'features',
+
+                'contentBlocks',
+            ])
+            ->first();
     }
 
     private function programSubquery(): Builder

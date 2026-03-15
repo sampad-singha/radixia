@@ -2,12 +2,15 @@
 
 namespace App\Domain\Taxonomy\Entities;
 
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Subcategory extends Model
 {
+    use HasUlids;
+
     protected $fillable = [
         'category_id',
         'name',
