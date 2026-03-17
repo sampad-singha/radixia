@@ -2,10 +2,12 @@
 
 namespace App\Domain\Instructors\Entities;
 
+use App\Domain\Taxonomy\Entities\Review;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class InstructorProfile extends Model
 {
@@ -28,6 +30,11 @@ class InstructorProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function reviews(): MorphMany
+    {
+        return $this->morphMany(Review::class, 'reviewable');
     }
 
     protected static function newFactory()

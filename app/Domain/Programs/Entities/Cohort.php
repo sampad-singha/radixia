@@ -44,7 +44,7 @@ class Cohort extends Model
         'start_date' => 'date',
         'end_date' => 'date',
         'capacity' => 'integer',
-        'price' => 'decimal:2',
+        'price' => 'float',
         'deleted_at' => 'datetime',
         'status' => CohortStatus::class,
     ];

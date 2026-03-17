@@ -3,6 +3,7 @@
 namespace App\Infrastructure\Catalog\Repositories;
 
 use App\Domain\Catalog\Repositories\CatalogRepositoryInterface;
+use App\Domain\Programs\Entities\Cohort;
 use App\Domain\Programs\Entities\Program;
 use App\Domain\Programs\Enums\CohortStatus;
 use Illuminate\Database\Eloquent\Builder;
@@ -35,29 +36,144 @@ class CatalogRepository implements CatalogRepositoryInterface
     {
         return Program::query()
             ->where('slug', $slug)
+
             ->with([
-                'instructor',
-
+                'instructor.instructorProfile',
                 'language',
-
                 'topics.subcategory.category',
-
                 'modules.lessons',
-
-                'cohorts' => function ($query) {
-                    $query->with([
-                        'enrollments',
-                        'instructor'
-                    ]);
-                },
-
-                'reviews.user',
-
+                'cohorts.enrollments',
+                'reviews',
                 'features',
-
                 'contentBlocks',
             ])
+
+            // ---------------------------
+            // Counts & Aggregates
+            // ---------------------------
+
+            ->withCount([
+                'modules',
+            ])
+
+            ->selectSub(function ($q) {
+                $q->from('cohorts')
+                    ->join('cohort_enrollments', 'cohort_enrollments.cohort_id', '=', 'cohorts.id')
+                    ->whereColumn('cohorts.program_id', 'programs.id')
+                    ->selectRaw('COUNT(cohort_enrollments.id)');
+            }, 'students_count')
+
+            ->withAvg('reviews as rating_avg', 'rating')
+            ->withCount('reviews as rating_count')
+
+            ->selectSub(function ($q) {
+                $q->from('modules')
+                    ->join('lessons', 'lessons.module_id', '=', 'modules.id')
+                    ->whereColumn('modules.program_id', 'programs.id')
+                    ->selectRaw('COUNT(lessons.id)');
+            }, 'lessons_count')
+
+            ->selectSub(function ($q) {
+                $q->from('modules')
+                    ->join('lessons', 'lessons.module_id', '=', 'modules.id')
+                    ->whereColumn('modules.program_id', 'programs.id')
+                    ->selectRaw('COALESCE(SUM(lessons.duration_minutes),0)');
+            }, 'duration_minutes')
+
+            // ---------------------------
+            // Latest Cohort (domain: MAX start_date)
+            // ---------------------------
+
+            ->selectSub(function ($q) {
+                $q->from('cohorts')
+                    ->whereColumn('cohorts.program_id', 'programs.id')
+                    ->selectRaw('MAX(start_date)');
+            }, 'latest_cohort_created_at')
+
+            // ---------------------------
+            // Pricing (latest cohort)
+            // ---------------------------
+
+            ->selectSub(function ($q) {
+                $q->from('cohorts')
+                    ->whereColumn('cohorts.program_id', 'programs.id')
+                    ->whereIn('status', [
+                        CohortStatus::SCHEDULED,
+                        CohortStatus::ACTIVE
+                    ])
+                    ->orderByDesc('start_date')
+                    ->orderByDesc('created_at')
+                    ->limit(1)
+                    ->select('price');
+            }, 'price')
+
+            ->selectSub(function ($q) {
+                $q->from('cohorts')
+                    ->whereColumn('cohorts.program_id', 'programs.id')
+                    ->whereIn('status', [
+                        CohortStatus::SCHEDULED,
+                        CohortStatus::ACTIVE
+                    ])
+                    ->orderByDesc('start_date')
+                    ->orderByDesc('created_at')
+                    ->limit(1)
+                    ->select('price');
+            }, 'original_price')
+
             ->first();
+    }
+
+    public function programOverview(string $slug): ?Program
+    {
+        return Program::query()
+            ->where('slug', $slug)
+            ->with(['contentBlocks'])
+            ->select(['id', 'slug', 'description'])
+            ->first();
+    }
+
+    public function programCurriculum(string $slug): ?Program
+    {
+        return Program::query()
+            ->where('slug', $slug)
+            ->with([
+                'modules' => function ($q) {
+                    $q->orderBy('order_index');
+                },
+                'modules.lessons' => function ($q) {
+                    $q->orderBy('order_index');
+                }
+            ])
+            ->select(['id', 'slug'])
+            ->first();
+    }
+
+    public function programCohorts(string $slug): Collection
+    {
+        return Cohort::query()
+            ->whereHas('program', fn ($q) => $q->where('slug', $slug))
+
+            ->with([
+                'instructor:id,name',
+            ])
+
+            ->withCount([
+                'enrollments as enrolled_count'
+            ])
+
+            ->orderByDesc('start_date')
+
+            ->get([
+                'id',
+                'program_id',
+                'name',
+                'start_date',
+                'end_date',
+                'schedule',
+                'assigned_instructor_id',
+                'price',
+                'capacity',
+            ]);
     }
 
     private function programSubquery(): Builder

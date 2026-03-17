@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\Users\Repositories;
 
+use App\Domain\Instructors\Entities\InstructorProfile;
 use App\Domain\Users\Entities\UserProfile;
 use App\Domain\Users\Repositories\UserRepositoryInterface;
 use App\Models\User;
@@ -92,6 +93,40 @@ class UserRepository implements UserRepositoryInterface
             'password' => $newPassword,
             'remember_token' => Str::random(60),
         ])->save();
+    }
+
+    public function getInstructorStats(string $userId): array
+    {
+        return [
+            'courses' => DB::table('programs')
+                ->where('instructor_id', $userId)
+                ->count(),
+
+            'students' => DB::table('cohorts as c')
+                ->join('cohort_enrollments as ce', 'ce.cohort_id', '=', 'c.id')
+                ->join('programs as p', 'p.id', '=', 'c.program_id')
+                ->where('p.instructor_id', $userId)
+                ->distinct('ce.user_id')
+                ->count('ce.user_id'),
+
+            'rating_avg' => DB::table('reviews')
+                ->where('reviewable_type', InstructorProfile::class)
+                ->whereIn('reviewable_id', function ($q) use ($userId) {
+                    $q->select('id')
+                        ->from('instructor_profiles')
+                        ->where('user_id', $userId);
+                })
+                ->avg('rating'),
+
+            'rating_count' => DB::table('reviews')
+                ->where('reviewable_type', InstructorProfile::class)
+                ->whereIn('reviewable_id', function ($q) use ($userId) {
+                    $q->select('id')
+                        ->from('instructor_profiles')
+                        ->where('user_id', $userId);
+                })
+                ->count(),
+        ];
     }
 
 }

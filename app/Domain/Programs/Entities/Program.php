@@ -52,6 +52,9 @@ class Program extends Model
         'id' => 'string',
         'instructor_id' => 'string',
         'deleted_at' => 'datetime',
+        'latest_cohort_created_at' => 'datetime',
+        'price' => 'float',
+        'original_price' => 'float',
     ];
 
     public function instructor(): BelongsTo

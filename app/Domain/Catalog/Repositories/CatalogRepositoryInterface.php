@@ -10,4 +10,6 @@ interface CatalogRepositoryInterface
 {
     public function explore(array $filters): LengthAwarePaginator;
     public function programDetails(string $slug): ?Program;
+    public function programCurriculum(string $slug): ?Program;
+    public function programCohorts(string $slug): Collection;
 }

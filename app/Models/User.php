@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Domain\Auth\Entities\SocialAccount;
+use App\Domain\Instructors\Entities\InstructorProfile;
 use App\Domain\Mfa\Entities\MfaMethod;
 use App\Domain\Programs\Entities\CohortEnrollment;
 use App\Domain\Users\Entities\UserProfile;
@@ -82,6 +83,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function profile(): HasOne
     {
         return $this->hasOne(UserProfile::class);
+    }
+
+    public function InstructorProfile(): HasOne
+    {
+        return $this->hasOne(InstructorProfile::class);
     }
 
     /**

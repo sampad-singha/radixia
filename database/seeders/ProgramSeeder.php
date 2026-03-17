@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Instructors\Entities\InstructorProfile;
 use App\Domain\Programs\Entities\Program;
 use App\Domain\Programs\Entities\Module;
 use App\Domain\Programs\Entities\Lesson;
@@ -12,8 +13,6 @@ use App\Domain\Taxonomy\Entities\Category;
 use App\Domain\Taxonomy\Entities\Subcategory;
 use App\Domain\Taxonomy\Entities\Topic;
 use App\Domain\Taxonomy\Entities\Language;
-use App\Domain\Taxonomy\Entities\Feature;
-use App\Domain\Taxonomy\Entities\ContentBlock;
 use App\Domain\Taxonomy\Entities\Review;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -87,15 +86,65 @@ class ProgramSeeder extends Seeder
         $students = User::factory()->count(40)->create();
 
         // --------------------------------------------------
+        // Instructors
+        // --------------------------------------------------
+
+        $instructors = User::factory()
+            ->count(5)
+            ->create();
+
+        $instructors->each(function ($user) {
+
+            InstructorProfile::create([
+                'user_id' => $user->id,
+                'headline' => fake()->randomElement([
+                    'Senior Laravel Engineer',
+                    'Backend Architect',
+                    'Fullstack Developer'
+                ]),
+                'bio' => fake()->paragraph(),
+                'intro_video_url' => fake()->url(),
+                'is_verified' => true,
+                'verification_status' => 'approved',
+            ]);
+
+        });
+
+        $profiles = InstructorProfile::all();
+
+        $profiles->each(function ($profile) use ($students) {
+
+            $students->random(rand(5, 15))
+                ->each(function ($student) use ($profile) {
+
+                    Review::create([
+                        'user_id' => $student->id,
+                        'reviewable_id' => $profile->id,
+                        'reviewable_type' => InstructorProfile::class,
+                        'rating' => rand(3, 5),
+                        'comment' => fake()->sentence(),
+                        'is_approved' => true,
+                    ]);
+
+                });
+
+        });
+
+
+        // --------------------------------------------------
         // Programs
         // --------------------------------------------------
 
         Program::factory()
             ->count(15)
             ->create([
-                'language_id' => $english->id
+                'language_id' => $english->id,
             ])
-            ->each(function ($program) use ($topics, $students) {
+            ->each(function ($program) use ($topics, $students, $instructors) {
+
+                $program->update([
+                    'instructor_id' => $instructors->random()->id
+                ]);
 
                 // Attach topics
                 $program->topics()->attach(
@@ -134,7 +183,7 @@ class ProgramSeeder extends Seeder
                     ->count(rand(1,2))
                     ->create([
                         'program_id' => $program->id,
-                        'assigned_instructor_id' => User::factory(),
+                        'assigned_instructor_id' => $program->instructor_id,
                         'start_date' => now()->subMonths(rand(4,10)),
                         'end_date' => now()->subMonths(rand(1,3)),
                         'status' => CohortStatus::COMPLETED
@@ -143,7 +192,7 @@ class ProgramSeeder extends Seeder
                 $futureCohort = Cohort::factory()
                     ->create([
                         'program_id' => $program->id,
-                        'assigned_instructor_id' => User::factory(),
+                        'assigned_instructor_id' => $program->instructor_id,
                         'start_date' => now()->addWeeks(rand(2,6)),
                         'end_date' => now()->addWeeks(rand(10,20)),
                         'status' => CohortStatus::SCHEDULED
@@ -167,6 +216,17 @@ class ProgramSeeder extends Seeder
                         });
 
                 });
+
+                $futureCohort->enrollments()->createMany(
+                    $students->random(rand(5,15))
+                        ->map(function ($student) {
+                            return [
+                                'user_id' => $student->id,
+                                'status' => 'active'
+                            ];
+                        })
+                        ->toArray()
+                );
 
                 // --------------------------------------------------
                 // Reviews
